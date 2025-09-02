@@ -75,44 +75,91 @@ function App() {
   // Estado para "Biblioteca"
   const [filtroArtesano, setFiltroArtesano] = useState('todos');
 
+  const isFirstRender = useRef(true);
 
   // --- EFECTOS (PERSISTENCIA Y OTROS) ---
 
   // Cargar datos de localStorage al iniciar
   useEffect(() => {
+    // Cargar Libros
     try {
       const librosGuardados = localStorage.getItem('fabricaContenido_libros');
-      if (librosGuardados) setLibros(JSON.parse(librosGuardados));
+      if (librosGuardados) {
+        setLibros(JSON.parse(librosGuardados));
+      }
+    } catch (error) {
+      console.error("Error al cargar libros de localStorage:", error);
+      setLibros([]);
+    }
 
+    // Cargar Artesanos
+    try {
       const artesanosGuardados = localStorage.getItem('fabricaContenido_artesanos');
-      if (artesanosGuardados) {
-        setArtesanos(JSON.parse(artesanosGuardados));
-      } else {
-        // Inicializar con artesanos por defecto si no hay nada guardado
+      console.log("localStorage.getItem('fabricaContenido_artesanos') returned:", artesanosGuardados);
+      let loadedArtesanos = [];
+
+      if (artesanosGuardados !== null) {
+        loadedArtesanos = JSON.parse(artesanosGuardados);
+        console.log("JSON.parse(artesanosGuardados) returned:", loadedArtesanos);
+      }
+
+      // If loadedArtesanos is empty (either from null localStorage or "[]" in localStorage),
+      // then use the default artisans.
+      if (loadedArtesanos.length === 0) {
+        console.log("Loading default artisans.");
         const artesanosDefault = [
           { id: 1, nombre: 'Corrector Ortográfico y Gramatical', prompt: 'Corrige la ortografía y la gramática del siguiente texto. No alteres el significado ni el estilo. Simplemente devuelve el texto corregido.' },
           { id: 2, nombre: 'Resumen Ejecutivo (50 palabras)', prompt: 'Crea un resumen ejecutivo de no más de 50 palabras para el siguiente texto.' },
           { id: 3, nombre: 'Transformar a Tono Casual', prompt: 'Re-escribe el siguiente texto con un tono más casual, amigable y conversacional, como si se lo estuvieras contando a un amigo.' },
         ];
         setArtesanos(artesanosDefault);
+      } else {
+        console.log("Loading saved artisans.");
+        setArtesanos(loadedArtesanos);
       }
+    } catch (error) {
+      console.error("Error al cargar artesanos de localStorage:", error);
+      const artesanosDefault = [
+        { id: 1, nombre: 'Corrector Ortográfico y Gramatical', prompt: 'Corrige la ortografía y la gramática del siguiente texto. No alteres el significado ni el estilo. Simplemente devuelve el texto corregido.' },
+        { id: 2, nombre: 'Resumen Ejecutivo (50 palabras)', prompt: 'Crea un resumen ejecutivo de no más de 50 palabras para el siguiente texto.' },
+        { id: 3, nombre: 'Transformar a Tono Casual', prompt: 'Re-escribe el siguiente texto con un tono más casual, amigable y conversacional, como si se lo estuvieras contando a un amigo.' },
+      ];
+      setArtesanos(artesanosDefault);
+    }
 
-      const apiKeyGuardada = localStorage.getItem('fabricaContenido_apiKey');
-      if (apiKeyGuardada) setApiKey(apiKeyGuardada);
+    // Cargar API Key
+    const apiKeyGuardada = localStorage.getItem('fabricaContenido_apiKey');
+    if (apiKeyGuardada) {
+      setApiKey(apiKeyGuardada);
+    }
 
+    // Cargar Modo Oscuro
+    try {
       const modoOscuroGuardado = localStorage.getItem('fabricaContenido_modoOscuro');
       const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       setModoOscuro(modoOscuroGuardado ? JSON.parse(modoOscuroGuardado) : prefiereOscuro);
-
     } catch (error) {
-      console.error("Error al cargar datos de localStorage:", error);
-      mostrarNotificacion("Error al cargar datos. Se usarán valores por defecto.");
+      console.error("Error al cargar modo oscuro de localStorage:", error);
+      const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setModoOscuro(prefiereOscuro);
     }
   }, []);
 
   // Guardar datos en localStorage cuando cambian
   useEffect(() => { localStorage.setItem('fabricaContenido_libros', JSON.stringify(libros)); }, [libros]);
-  useEffect(() => { localStorage.setItem('fabricaContenido_artesanos', JSON.stringify(artesanos)); }, [artesanos]);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return; // Don't run on first render
+    }
+    try {
+      console.log("Attempting to save artisans:", artesanos);
+      localStorage.setItem('fabricaContenido_artesanos', JSON.stringify(artesanos));
+    } catch (error) {
+      console.error("Error al guardar artesanos en localStorage:", error);
+      mostrarNotificacion("Error al guardar los artesanos.");
+    }
+  }, [artesanos]);
   useEffect(() => { localStorage.setItem('fabricaContenido_apiKey', apiKey); }, [apiKey]);
   useEffect(() => { localStorage.setItem('fabricaContenido_modoOscuro', JSON.stringify(modoOscuro)); }, [modoOscuro]);
 
@@ -132,6 +179,13 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [notificacion]);
+
+  // Guardar contenido generado automáticamente
+  useEffect(() => {
+    if (!generandoContenido && contenidoGenerado.length > 0) {
+      handleGuardarEnBiblioteca();
+    }
+  }, [generandoContenido]);
 
 
   // --- MANEJADORES DE EVENTOS ---
@@ -232,10 +286,12 @@ function App() {
     }
 
     if (artesanoEditando) {
-      setArtesanos(artesanos.map(a => a.id === artesanoEditando.id ? artesanoEditando : a));
+      setArtesanos(prevArtesanos => 
+        prevArtesanos.map(a => a.id === artesanoEditando.id ? artesanoEditando : a)
+      );
       mostrarNotificacion("Artesano actualizado.");
     } else {
-      setArtesanos([...artesanos, { ...nuevoArtesano, id: Date.now() }]);
+      setArtesanos(prevArtesanos => [...prevArtesanos, { ...nuevoArtesano, id: Date.now() }]);
       mostrarNotificacion("Artesano creado.");
     }
     setArtesanoEditando(null);
@@ -609,7 +665,6 @@ function App() {
                   <Boton onClick={handleGenerarContenido} disabled={generandoContenido} className="flex-1">
                     {generandoContenido ? 'Generando...' : 'GENERAR CONTENIDO'}
                   </Boton>
-                  <Boton onClick={handleGuardarEnBiblioteca} variant="secundario" disabled={generandoContenido}>[S] Guardar en Biblioteca</Boton>
                   <Boton onClick={handleDescargarZip} variant="secundario" disabled={generandoContenido}>[Z] Descargar (.zip)</Boton>
                 </div>
                 
