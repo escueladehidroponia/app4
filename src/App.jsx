@@ -733,6 +733,31 @@ function App() {
     }
   };
 
+  const handleEliminarContenido = (libroId, capituloId, artesanoId) => {
+    const onConfirm = () => {
+      setLibros(prevLibros => prevLibros.map(libro => {
+        if (libro.id === libroId) {
+          return {
+            ...libro,
+            capitulos: libro.capitulos.map(capitulo => {
+              if (capitulo.id === capituloId) {
+                return {
+                  ...capitulo,
+                  contenido: capitulo.contenido.filter(cont => cont.artesanoId !== artesanoId)
+                };
+              }
+              return capitulo;
+            })
+          };
+        }
+        return libro;
+      }));
+      mostrarNotificacion("Contenido eliminado.");
+      cerrarModalConfirmacion();
+    };
+    abrirModalConfirmacion("Confirmar Eliminación", "¿Estás seguro de que quieres eliminar este contenido? Esta acción es irreversible.", onConfirm);
+  };
+
   const renderVistaBiblioteca = () => {
     if (!libroSeleccionado) {
       return (
@@ -784,6 +809,15 @@ function App() {
                       >
                         <ClipboardDocumentListIcon className="h-5 w-5" />
                       </button>
+                      {cont.artesanoId !== 'base' && (
+                        <button
+                          onClick={() => handleEliminarContenido(libroSeleccionado.id, cap.id, cont.artesanoId)}
+                          className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-red-500 dark:text-red-400 ml-2"
+                          title="Eliminar contenido"
+                        >
+                          <TrashIcon className="h-5 w-5" />
+                        </button>
+                      )}
                     </div>
                     <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{cont.texto}</p>
                   </Card>
