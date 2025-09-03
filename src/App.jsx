@@ -18,6 +18,7 @@ import {
   Cog6ToothIcon,
   Bars3Icon,
   ClipboardDocumentListIcon,
+  PencilIcon,
 } from '@heroicons/react/24/outline'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
@@ -82,6 +83,7 @@ function App() {
 
   // Estado para la vista "Mis Libros"
   const [nuevoLibro, setNuevoLibro] = useState({ titulo: '', indice: '' });
+  const [libroEditando, setLibroEditando] = useState(null);
 
   // Estado para "Área de Trabajo"
   const [capituloActivo, setCapituloActivo] = useState(null);
@@ -252,6 +254,14 @@ function App() {
     setNuevoLibro({ titulo: '', indice: '' });
     mostrarNotificacion("¡Libro creado con éxito!");
     console.log("Libro creado. Estado actual de libros:", [...libros, nuevo]);
+  };
+
+  const handleGuardarLibro = () => {
+    if (!libroEditando) return;
+
+    setLibros(libros.map(l => l.id === libroEditando.id ? libroEditando : l));
+    setLibroEditando(null);
+    mostrarNotificacion("Libro actualizado con éxito.");
   };
 
   const handleEliminarLibro = (idLibro) => {
@@ -541,6 +551,44 @@ function App() {
     </div>
   );
 
+  const renderModalEditarLibro = () => {
+    if (!libroEditando) return null;
+
+    return (
+      <Modal isOpen={!!libroEditando} onClose={() => setLibroEditando(null)} title="Editar Libro">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
+            <Input
+              type="text"
+              value={libroEditando.titulo}
+              onChange={(e) => setLibroEditando({ ...libroEditando, titulo: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Capítulos (uno por línea)</label>
+            <Textarea
+              rows="10"
+              value={libroEditando.capitulos.map(c => c.titulo).join('\n')}
+              onChange={(e) => {
+                const titulos = e.target.value.split('\n');
+                const nuevosCapitulos = titulos.map((titulo, index) => {
+                  const capituloExistente = libroEditando.capitulos[index];
+                  return capituloExistente ? { ...capituloExistente, titulo: titulo.trim() } : { id: Date.now() + Math.random(), titulo: titulo.trim(), completado: false, contenido: [] };
+                });
+                setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+              }}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-4 mt-6">
+          <Boton variant="secundario" onClick={() => setLibroEditando(null)}>Cancelar</Boton>
+          <Boton onClick={handleGuardarLibro}>Guardar Cambios</Boton>
+        </div>
+      </Modal>
+    );
+  };
+
   const renderSidebar = () => (
     <aside className={`absolute md:relative w-64 md:w-72 bg-gray-50 dark:bg-gray-800 h-full flex-shrink-0 flex flex-col border-r dark:border-gray-700 transition-transform duration-300 z-40 ${sidebarAbierta ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
@@ -593,6 +641,7 @@ function App() {
               </div>
               <div className="flex gap-2 mt-4">
                 <Boton onClick={() => handleSeleccionarLibro(libro)} className="flex-1">Abrir</Boton>
+                <Boton onClick={() => setLibroEditando(libro)} variant="secundario" className="px-3"><PencilIcon className="h-5 w-5" /></Boton>
                 <Boton onClick={() => handleEliminarLibro(libro.id)} variant="peligro" className="px-3"><TrashIcon className="h-5 w-5" /></Boton>
               </div>
             </Card>
@@ -633,7 +682,7 @@ function App() {
               onChange={e => artesanoEditando ? setArtesanoEditando({...artesanoEditando, nombre: e.target.value}) : setNuevoArtesano({...nuevoArtesano, nombre: e.target.value})}
             />
             <Textarea 
-              placeholder="Prompt para la IA (ej. 'Re-escribe el siguiente texto con un tono profesional y académico...')" 
+              placeholder="Prompt para la IA (ej. 'Re-escribe el siguiente texto con un tono profesional y académico...)" 
               rows="6"
               value={artesanoEditando ? artesanoEditando.prompt : nuevoArtesano.prompt}
               onChange={e => artesanoEditando ? setArtesanoEditando({...artesanoEditando, prompt: e.target.value}) : setNuevoArtesano({...nuevoArtesano, prompt: e.target.value})}
@@ -895,6 +944,8 @@ function App() {
           <Boton variant="peligro" onClick={modalConfirmacion.onConfirm}>Confirmar</Boton>
         </div>
       </Modal>
+
+      {renderModalEditarLibro()}
       
       {renderSidebar()}
       
