@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import {
+  XMarkIcon,
+  InformationCircleIcon,
+  BookOpenIcon,
+  BuildingLibraryIcon,
+  UsersIcon,
+  SunIcon,
+  MoonIcon,
+  TrashIcon,
+  PlusIcon,
+  ArrowDownTrayIcon,
+  ArrowUpTrayIcon,
+  CodeBracketIcon,
+  ArchiveBoxIcon,
+  Cog6ToothIcon,
+  Bars3Icon,
+} from '@heroicons/react/24/outline'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
 
@@ -33,7 +50,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md m-4">
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
           <h3 className="text-lg font-semibold">{title}</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200">[X]</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><XMarkIcon className="h-5 w-5" /></button>
         </div>
         <div className="p-4">{children}</div>
       </div>
@@ -52,7 +69,7 @@ function App() {
   const [apiKey, setApiKey] = useState('');
   const [libroSeleccionado, setLibroSeleccionado] = useState(null);
   const [notificacion, setNotificacion] = useState({ mensaje: '', visible: false });
-  // const [modoOscuro, setModoOscuro] = useState(false);
+  const [modoOscuro, setModoOscuro] = useState(false);
   const [sidebarAbierta, setSidebarAbierta] = useState(false);
 
   // Estado para modales de confirmación
@@ -138,7 +155,6 @@ function App() {
     }
 
     // Cargar Modo Oscuro
-    /*
     try {
       const modoOscuroGuardado = localStorage.getItem('fabricaContenido_modoOscuro');
       const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -148,7 +164,6 @@ function App() {
       const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       setModoOscuro(prefiereOscuro);
     }
-    */
   }, []);
 
   // Guardar datos en localStorage cuando cambian
@@ -174,10 +189,9 @@ function App() {
     }
   }, [artesanos]);
   useEffect(() => { localStorage.setItem('fabricaContenido_apiKey', apiKey); }, [apiKey]);
-  // useEffect(() => { localStorage.setItem('fabricaContenido_modoOscuro', JSON.stringify(modoOscuro)); }, [modoOscuro]);
+  useEffect(() => { localStorage.setItem('fabricaContenido_modoOscuro', JSON.stringify(modoOscuro)); }, [modoOscuro]);
 
   // Aplicar clase 'dark' al HTML
-  /*
   useEffect(() => {
     if (modoOscuro) {
       document.documentElement.classList.add('dark');
@@ -185,7 +199,6 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [modoOscuro]);
-  */
 
   // Ocultar notificación automáticamente
   useEffect(() => {
@@ -488,11 +501,11 @@ function App() {
   const renderSidebar = () => (
     <aside className={`absolute md:relative w-64 md:w-72 bg-gray-50 dark:bg-gray-800 h-full flex-shrink-0 flex flex-col border-r dark:border-gray-700 transition-transform duration-300 z-40 ${sidebarAbierta ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
       <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
-        <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2">[i] Fábrica v5.0</h1>
-        <button className="md:hidden" onClick={() => setSidebarAbierta(false)}>[X]</button>
+        <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2"><InformationCircleIcon className="h-6 w-6" /> Fábrica v5.0</h1>
+        <button className="md:hidden" onClick={() => setSidebarAbierta(false)}><XMarkIcon className="h-5 w-5" /></button>
       </div>
       <nav className="flex-grow p-4 space-y-2">
-        {[{id: 'Mis Libros', icon: '[B]'}, {id: 'Área de Trabajo', icon: '[B+]'}, {id: 'Biblioteca', icon: '[L]'}, {id: 'Artesanos', icon: '[A]'}].map(item => (
+        {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Área de Trabajo', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}].map(item => (
           <button key={item.id} onClick={() => { setVistaActual(item.id); setSidebarAbierta(false); }}
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-left font-medium ${vistaActual === item.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
             {item.icon}
@@ -507,11 +520,9 @@ function App() {
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium">Modo Oscuro</span>
-          {/*
           <button onClick={() => setModoOscuro(!modoOscuro)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
-            {modoOscuro ? '[Sol]' : '[Luna]'}
+            {modoOscuro ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
           </button>
-          */}
         </div>
       </div>
     </aside>
@@ -548,16 +559,16 @@ function App() {
              <form onSubmit={handleCrearLibro} className="w-full space-y-3">
                 <Input placeholder="Título del libro" value={nuevoLibro.titulo} onChange={e => setNuevoLibro({...nuevoLibro, titulo: e.target.value})} />
                 <Textarea placeholder="Índice (un capítulo por línea)" rows="4" value={nuevoLibro.indice} onChange={e => setNuevoLibro({...nuevoLibro, indice: e.target.value})} />
-                <Boton type="submit" className="w-full">[+] Crear Libro</Boton>
+                <Boton type="submit" className="w-full"><PlusIcon className="h-5 w-5" /> Crear Libro</Boton>
              </form>
           </Card>
         </div>
         <h2 className="text-2xl font-bold mb-6 mt-12">Gestión de Biblioteca</h2>
         <Card>
           <div className="flex flex-col md:flex-row gap-4">
-            <Boton onClick={handleExportarBiblioteca} variant="secundario" className="w-full">[D] Exportar Biblioteca (.json)</Boton>
+            <Boton onClick={handleExportarBiblioteca} variant="secundario" className="w-full"><ArrowDownTrayIcon className="h-5 w-5" /> Exportar Biblioteca (.json)</Boton>
             <label className="w-full">
-              <Boton as="span" variant="secundario" className="w-full cursor-pointer">[U] Importar Biblioteca (.json)</Boton>
+              <Boton as="span" variant="secundario" className="w-full cursor-pointer"><ArrowUpTrayIcon className="h-5 w-5" /> Importar Biblioteca (.json)</Boton>
               <input type="file" accept=".json" className="hidden" onChange={handleImportarBiblioteca} />
             </label>
           </div>
@@ -597,7 +608,7 @@ function App() {
               <p className="font-medium">{artesano.nombre}</p>
               <div className="flex gap-2">
                 <Boton variant="secundario" onClick={() => setArtesanoEditando(artesano)}>Editar</Boton>
-                <Boton variant="peligro" onClick={() => handleEliminarArtesano(artesano.id)}>[T]</Boton>
+                <Boton variant="peligro" onClick={() => handleEliminarArtesano(artesano.id)}><TrashIcon className="h-5 w-5" /></Boton>
               </div>
             </Card>
           ))}
@@ -610,7 +621,7 @@ function App() {
     if (!libroSeleccionado) {
       return (
         <div className="text-center py-20">
-          <p className="text-4xl mx-auto text-gray-400 mb-4">[B]</p>
+          <p className="text-4xl mx-auto text-gray-400 mb-4"><BookOpenIcon className="h-10 w-10" /></p>
           <h2 className="text-2xl font-bold">Área de Trabajo</h2>
           <p className="text-gray-500 dark:text-gray-400 mt-2">Selecciona un libro desde "Mis Libros" para empezar a trabajar.</p>
         </div>
@@ -651,7 +662,7 @@ function App() {
           <div className="lg:col-span-2">
             {!capituloActivo ? (
               <div className="text-center py-20 h-full flex flex-col justify-center items-center">
-                <p className="text-4xl mx-auto text-gray-400 mb-4">[&lt;&gt;]</p>
+                <p className="text-4xl mx-auto text-gray-400 mb-4"><CodeBracketIcon className="h-10 w-10" /></p>
                 <h3 className="text-xl font-bold">Selecciona un capítulo</h3>
                 <p className="text-gray-500 dark:text-gray-400 mt-2">Elige un capítulo del índice para empezar a generar contenido.</p>
               </div>
@@ -683,7 +694,7 @@ function App() {
                   <Boton onClick={handleGenerarContenido} disabled={generandoContenido} className="flex-1">
                     {generandoContenido ? 'Generando...' : 'GENERAR CONTENIDO'}
                   </Boton>
-                  <Boton onClick={handleDescargarZip} variant="secundario" disabled={generandoContenido}>[Z] Descargar (.zip)</Boton>
+                  <Boton onClick={handleDescargarZip} variant="secundario" disabled={generandoContenido}><ArchiveBoxIcon className="h-5 w-5" /> Descargar (.zip)</Boton>
                 </div>
                 
                 {/* Panel de Resultados */}
@@ -715,7 +726,7 @@ function App() {
     if (!libroSeleccionado) {
       return (
         <div className="text-center py-20">
-          <p className="text-4xl mx-auto text-gray-400 mb-4">[L]</p>
+          <p className="text-4xl mx-auto text-gray-400 mb-4"><BuildingLibraryIcon className="h-10 w-10" /></p>
           <h2 className="text-2xl font-bold">Biblioteca</h2>
           <p className="text-gray-500 dark:text-gray-400 mt-2">Selecciona un libro desde "Mis Libros" para ver su contenido.</p>
         </div>
@@ -736,7 +747,7 @@ function App() {
           <div className="flex items-center gap-4">
             <Boton variant="secundario" onClick={() => setLibroSeleccionado(null)}>Cambiar Libro</Boton>
             <div className="flex items-center gap-2">
-              <p>[S]</p>
+              <Cog6ToothIcon className="h-5 w-5" />
               <select value={filtroArtesano} onChange={e => setFiltroArtesano(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3">
                 <option value="todos">Filtrar por Artesano</option>
                 <option value="base">Texto Base</option>
@@ -788,7 +799,7 @@ function App() {
       
       <main className="flex-1 p-4 md:p-8 overflow-y-auto">
         <button onClick={() => setSidebarAbierta(true)} className="md:hidden mb-4 p-2 bg-gray-200 dark:bg-gray-700 rounded-md">
-          [M]
+          <Bars3Icon className="h-5 w-5" />
         </button>
         {vistaActual === 'Mis Libros' && renderVistaMisLibros()}
         {vistaActual === 'Área de Trabajo' && renderVistaAreaDeTrabajo()}
