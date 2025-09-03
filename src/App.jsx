@@ -551,7 +551,7 @@ function App() {
               </div>
               <div className="flex gap-2 mt-4">
                 <Boton onClick={() => handleSeleccionarLibro(libro)} className="flex-1">Abrir</Boton>
-                <Boton onClick={() => handleEliminarLibro(libro.id)} variant="peligro" className="px-3">[T]</Boton>
+                <Boton onClick={() => handleEliminarLibro(libro.id)} variant="peligro" className="px-3"><TrashIcon className="h-5 w-5" /></Boton>
               </div>
             </Card>
           ))}
