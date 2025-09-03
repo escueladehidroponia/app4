@@ -490,6 +490,30 @@ function App() {
     mostrarNotificacion("Descarga iniciada.");
   };
 
+  const handleDescargarCapituloZip = (capitulo) => {
+    if (!capitulo || !capitulo.contenido || capitulo.contenido.length === 0) {
+      mostrarNotificacion("No hay contenido en este capítulo para descargar.");
+      return;
+    }
+
+    const zip = new JSZip();
+    const carpeta = zip.folder(capitulo.titulo.replace(/[^a-z0-9]/gi, '_'));
+
+    const textoBase = capitulo.contenido.find(c => c.artesanoId === 'base')?.texto || '';
+    carpeta.file("00_Texto_Base.txt", textoBase);
+
+    const otrosContenidos = capitulo.contenido.filter(c => c.artesanoId !== 'base');
+    otrosContenidos.forEach((item, index) => {
+      const nombreArchivo = `${String(index + 1).padStart(2, '0')}_${item.nombreArtesano.replace(/[^a-z0-9]/gi, '_')}.txt`;
+      carpeta.file(nombreArchivo, item.texto);
+    });
+
+    zip.generateAsync({ type: "blob" }).then(content => {
+      saveAs(content, `${libroSeleccionado.titulo.replace(/[^a-z0-9]/gi, '_')}_${capitulo.titulo.replace(/[^a-z0-9]/gi, '_')}.zip`);
+    });
+    mostrarNotificacion("Descarga iniciada.");
+  };
+
 
   // --- RENDERIZADO DE VISTAS ---
 
@@ -796,7 +820,12 @@ function App() {
         <div className="space-y-8">
           {contenidoFiltrado.length > 0 ? contenidoFiltrado.map(cap => (
             <div key={cap.id}>
-              <h3 className="text-xl font-semibold border-b-2 border-blue-500 pb-2 mb-4">{cap.titulo}</h3>
+              <div className="flex justify-between items-center border-b-2 border-blue-500 pb-2 mb-4">
+                <h3 className="text-xl font-semibold">{cap.titulo}</h3>
+                <Boton onClick={() => handleDescargarCapituloZip(cap)} variant="secundario">
+                  <ArchiveBoxIcon className="h-5 w-5" /> Descargar Capítulo
+                </Boton>
+              </div>
               <div className="space-y-4">
                 {cap.contenidos.map((cont, index) => (
                   <Card key={index}>
