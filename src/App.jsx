@@ -393,6 +393,24 @@ function App() {
       return;
     }
 
+    // Check for existing content
+    const artesanosConContenido = artesanosActivos.filter(artesano =>
+      capituloActivo.contenido.some(c => c.artesanoId === artesano.id)
+    );
+
+    if (artesanosConContenido.length > 0) {
+      const nombresArtesanos = artesanosConContenido.map(a => a.nombre).join(', ');
+      abrirModalConfirmacion(
+        "Confirmar Sobrescribir",
+        `Ya existe contenido para los siguientes artesanos: ${nombresArtesanos}. ¿Deseas sobrescribirlo?`,
+        () => proceedWithGeneration(artesanosActivos)
+      );
+    } else {
+      proceedWithGeneration(artesanosActivos);
+    }
+  };
+
+  const proceedWithGeneration = async (artesanosActivos) => {
     setGenerandoContenido(true);
     setContenidoGenerado([]);
 
