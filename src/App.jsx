@@ -52,7 +52,7 @@ function App() {
   const [apiKey, setApiKey] = useState('');
   const [libroSeleccionado, setLibroSeleccionado] = useState(null);
   const [notificacion, setNotificacion] = useState({ mensaje: '', visible: false });
-  const [modoOscuro, setModoOscuro] = useState(false);
+  // const [modoOscuro, setModoOscuro] = useState(false);
   const [sidebarAbierta, setSidebarAbierta] = useState(false);
 
   // Estado para modales de confirmación
@@ -75,7 +75,8 @@ function App() {
   // Estado para "Biblioteca"
   const [filtroArtesano, setFiltroArtesano] = useState('todos');
 
-  const isFirstRender = useRef(true);
+  const isFirstRenderLibros = useRef(true);
+  const isFirstRenderArtesanos = useRef(true);
 
   // --- EFECTOS (PERSISTENCIA Y OTROS) ---
 
@@ -84,8 +85,11 @@ function App() {
     // Cargar Libros
     try {
       const librosGuardados = localStorage.getItem('fabricaContenido_libros');
+      console.log("Cargando libros: Valor de 'fabricaContenido_libros' en localStorage:", librosGuardados);
       if (librosGuardados) {
-        setLibros(JSON.parse(librosGuardados));
+        const parsedLibros = JSON.parse(librosGuardados);
+        setLibros(parsedLibros);
+        console.log("Cargando libros: Libros parseados y establecidos:", parsedLibros);
       }
     } catch (error) {
       console.error("Error al cargar libros de localStorage:", error);
@@ -105,16 +109,16 @@ function App() {
 
       // If loadedArtesanos is empty (either from null localStorage or "[]" in localStorage),
       // then use the default artisans.
-      if (loadedArtesanos.length === 0) {
-        console.log("Loading default artisans.");
+      if (artesanosGuardados === null) { // If nothing was ever saved, load defaults
+        console.log("Loading default artisans (localStorage was null).");
         const artesanosDefault = [
           { id: 1, nombre: 'Corrector Ortográfico y Gramatical', prompt: 'Corrige la ortografía y la gramática del siguiente texto. No alteres el significado ni el estilo. Simplemente devuelve el texto corregido.' },
           { id: 2, nombre: 'Resumen Ejecutivo (50 palabras)', prompt: 'Crea un resumen ejecutivo de no más de 50 palabras para el siguiente texto.' },
           { id: 3, nombre: 'Transformar a Tono Casual', prompt: 'Re-escribe el siguiente texto con un tono más casual, amigable y conversacional, como si se lo estuvieras contando a un amigo.' },
         ];
         setArtesanos(artesanosDefault);
-      } else {
-        console.log("Loading saved artisans.");
+      } else { // If something was saved (even an empty array), use that
+        console.log("Loading saved artisans (from localStorage).");
         setArtesanos(loadedArtesanos);
       }
     } catch (error) {
@@ -134,6 +138,7 @@ function App() {
     }
 
     // Cargar Modo Oscuro
+    /*
     try {
       const modoOscuroGuardado = localStorage.getItem('fabricaContenido_modoOscuro');
       const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -143,13 +148,21 @@ function App() {
       const prefiereOscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       setModoOscuro(prefiereOscuro);
     }
+    */
   }, []);
 
   // Guardar datos en localStorage cuando cambian
-  useEffect(() => { localStorage.setItem('fabricaContenido_libros', JSON.stringify(libros)); }, [libros]);
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (isFirstRenderLibros.current) {
+      isFirstRenderLibros.current = false;
+      return; // Don't run on first render
+    }
+    console.log("Guardando libros: Estado actual de libros para guardar:", libros);
+    localStorage.setItem('fabricaContenido_libros', JSON.stringify(libros));
+  }, [libros]);
+  useEffect(() => {
+    if (isFirstRenderArtesanos.current) {
+      isFirstRenderArtesanos.current = false;
       return; // Don't run on first render
     }
     try {
@@ -161,9 +174,10 @@ function App() {
     }
   }, [artesanos]);
   useEffect(() => { localStorage.setItem('fabricaContenido_apiKey', apiKey); }, [apiKey]);
-  useEffect(() => { localStorage.setItem('fabricaContenido_modoOscuro', JSON.stringify(modoOscuro)); }, [modoOscuro]);
+  // useEffect(() => { localStorage.setItem('fabricaContenido_modoOscuro', JSON.stringify(modoOscuro)); }, [modoOscuro]);
 
   // Aplicar clase 'dark' al HTML
+  /*
   useEffect(() => {
     if (modoOscuro) {
       document.documentElement.classList.add('dark');
@@ -171,6 +185,7 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [modoOscuro]);
+  */
 
   // Ocultar notificación automáticamente
   useEffect(() => {
@@ -222,6 +237,7 @@ function App() {
     setLibros([...libros, nuevo]);
     setNuevoLibro({ titulo: '', indice: '' });
     mostrarNotificacion("¡Libro creado con éxito!");
+    console.log("Libro creado. Estado actual de libros:", [...libros, nuevo]);
   };
 
   const handleEliminarLibro = (idLibro) => {
@@ -491,9 +507,11 @@ function App() {
         </div>
         <div className="flex justify-between items-center">
           <span className="text-sm font-medium">Modo Oscuro</span>
+          {/*
           <button onClick={() => setModoOscuro(!modoOscuro)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
             {modoOscuro ? '[Sol]' : '[Luna]'}
           </button>
+          */}
         </div>
       </div>
     </aside>
