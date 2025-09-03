@@ -242,13 +242,14 @@ function App() {
       id: Date.now() + Math.random(),
       titulo: titulo.trim(),
       completado: false,
-      contenido: [] // { artesanoId, nombreArtesano, texto }
+      contenido: [] // { artesanoId, nombreArtesano, texto, fechaCreacion }
     }));
 
     const nuevo = {
       id: Date.now(),
       titulo: nuevoLibro.titulo.trim(),
       capitulos,
+      fechaCreacion: new Date().toISOString(),
     };
     setLibros([...libros, nuevo]);
     setNuevoLibro({ titulo: '', indice: '' });
@@ -446,6 +447,7 @@ function App() {
           artesanoId: artesano.id,
           nombreArtesano: artesano.nombre,
           texto: textoResultado,
+          fechaCreacion: new Date().toISOString(),
         });
         setContenidoGenerado([...resultados]); // Actualizar UI en tiempo real
       } catch (error) {
@@ -633,7 +635,12 @@ function App() {
             <Card key={libro.id} className="flex flex-col justify-between">
               <div>
                 <h3 className="text-lg font-bold mb-2">{libro.titulo}</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{libro.capitulos.length} capítulos</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{libro.capitulos.length} capítulos</p>
+                {libro.fechaCreacion && (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+                    Creado: {new Date(libro.fechaCreacion).toLocaleDateString()}
+                  </p>
+                )}
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                   <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${calcularProgreso(libro)}%` }}></div>
                 </div>
@@ -898,22 +905,29 @@ function App() {
                   <Card key={index}>
                     <div className="flex justify-between items-start">
                       <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">{cont.nombreArtesano}</h4>
-                      <button
-                        onClick={() => handleCopy(cont.texto)}
-                        className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                        title="Copiar contenido"
-                      >
-                        <ClipboardDocumentListIcon className="h-5 w-5" />
-                      </button>
-                      {cont.artesanoId !== 'base' && (
+                      <div className="flex items-center">
+                        {cont.fechaCreacion && (
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mr-4">
+                            Generado: {new Date(cont.fechaCreacion).toLocaleString()}
+                          </p>
+                        )}
                         <button
-                          onClick={() => handleEliminarContenido(libroSeleccionado.id, cap.id, cont.artesanoId)}
-                          className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-red-500 dark:text-red-400 ml-2"
-                          title="Eliminar contenido"
+                          onClick={() => handleCopy(cont.texto)}
+                          className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                          title="Copiar contenido"
                         >
-                          <TrashIcon className="h-5 w-5" />
+                          <ClipboardDocumentListIcon className="h-5 w-5" />
                         </button>
-                      )}
+                        {cont.artesanoId !== 'base' && (
+                          <button
+                            onClick={() => handleEliminarContenido(libroSeleccionado.id, cap.id, cont.artesanoId)}
+                            className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-red-500 dark:text-red-400 ml-2"
+                            title="Eliminar contenido"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{cont.texto}</p>
                   </Card>
