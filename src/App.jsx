@@ -17,6 +17,7 @@ import {
   ArchiveBoxIcon,
   Cog6ToothIcon,
   Bars3Icon,
+  ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
@@ -722,6 +723,16 @@ function App() {
     );
   };
 
+  const handleCopy = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      mostrarNotificacion("¡Copiado!");
+    } catch (err) {
+      console.error('Error al copiar: ', err);
+      mostrarNotificacion("Error al copiar.");
+    }
+  };
+
   const renderVistaBiblioteca = () => {
     if (!libroSeleccionado) {
       return (
@@ -734,7 +745,7 @@ function App() {
     }
 
     const contenidoFiltrado = libroSeleccionado.capitulos.map(cap => {
-      const contenidos = cap.contenido.filter(cont => 
+      const contenidos = cap.contenido.filter(cont =>
         filtroArtesano === 'todos' || String(cont.artesanoId) === filtroArtesano
       );
       return { ...cap, contenidos };
@@ -764,7 +775,16 @@ function App() {
               <div className="space-y-4">
                 {cap.contenidos.map((cont, index) => (
                   <Card key={index}>
-                    <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">{cont.nombreArtesano}</h4>
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">{cont.nombreArtesano}</h4>
+                      <button
+                        onClick={() => handleCopy(cont.texto)}
+                        className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                        title="Copiar contenido"
+                      >
+                        <ClipboardDocumentListIcon className="h-5 w-5" />
+                      </button>
+                    </div>
                     <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{cont.texto}</p>
                   </Card>
                 ))}
