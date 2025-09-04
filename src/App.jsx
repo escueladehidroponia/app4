@@ -85,7 +85,7 @@ function App() {
   const [nuevoLibro, setNuevoLibro] = useState({ titulo: '', indice: '' });
   const [libroEditando, setLibroEditando] = useState(null);
 
-  // Estado para "Área de Trabajo"
+  // Estado para "Área de Creación"
   const [capituloActivo, setCapituloActivo] = useState(null);
   const [textoBase, setTextoBase] = useState('');
   const [artesanosSeleccionados, setArtesanosSeleccionados] = useState({});
@@ -349,13 +349,13 @@ function App() {
   };
 
 
-  // --- Lógica de "Área de Trabajo" ---
+  // --- Lógica de "Área de Creación" ---
   const handleSeleccionarLibro = (libro) => {
     setLibroSeleccionado(libro);
     setCapituloActivo(null);
     setTextoBase('');
     setContenidoGenerado([]);
-    setVistaActual('Área de Trabajo');
+    setVistaActual('Área de Creación');
   };
 
   const handleMarcarCapitulo = (idCapitulo) => {
@@ -547,6 +547,9 @@ function App() {
 
   // --- RENDERIZADO DE VISTAS ---
 
+
+  // --- RENDERIZADO DE VISTAS ---
+
   const renderNotificacion = () => (
     <div className={`fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transition-transform duration-300 ${notificacion.visible ? 'translate-x-0' : 'translate-x-[120%]'}`}>
       {notificacion.mensaje}
@@ -598,7 +601,7 @@ function App() {
         <button className="md:hidden" onClick={() => setSidebarAbierta(false)}><XMarkIcon className="h-5 w-5" /></button>
       </div>
       <nav className="flex-grow p-4 space-y-2">
-        {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Área de Trabajo', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}].map(item => (
+        {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}].map(item => (
           <button key={item.id} onClick={() => { setVistaActual(item.id); setSidebarAbierta(false); }}
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-left font-medium ${vistaActual === item.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
             {item.icon}
@@ -716,12 +719,12 @@ function App() {
     </div>
   );
 
-  const renderVistaAreaDeTrabajo = () => {
+  const renderVistaAreaDeCreacion = () => {
     if (!libroSeleccionado) {
       return (
         <div className="text-center py-20">
           <p className="text-4xl mx-auto text-gray-400 mb-4"><BookOpenIcon className="h-10 w-10" /></p>
-          <h2 className="text-2xl font-bold">Área de Trabajo</h2>
+          <h2 className="text-2xl font-bold">Área de Creación</h2>
           <p className="text-gray-500 dark:text-gray-400 mt-2">Selecciona un libro desde "Mis Libros" para empezar a trabajar.</p>
         </div>
       );
@@ -901,37 +904,42 @@ function App() {
                 </Boton>
               </div>
               <div className="space-y-4">
-                {cap.contenidos.map((cont, index) => (
-                  <Card key={index}>
-                    <div className="flex justify-between items-start">
-                      <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">{cont.nombreArtesano}</h4>
-                      <div className="flex items-center">
-                        {cont.fechaCreacion && (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mr-4">
-                            Generado: {new Date(cont.fechaCreacion).toLocaleString()}
-                          </p>
-                        )}
-                        <button
-                          onClick={() => handleCopy(cont.texto)}
-                          className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
-                          title="Copiar contenido"
-                        >
-                          <ClipboardDocumentListIcon className="h-5 w-5" />
-                        </button>
-                        {cont.artesanoId !== 'base' && (
-                          <button
-                            onClick={() => handleEliminarContenido(libroSeleccionado.id, cap.id, cont.artesanoId)}
-                            className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-red-500 dark:text-red-400 ml-2"
-                            title="Eliminar contenido"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        )}
+                {cap.contenidos.map((cont, index) => {
+
+                  return (
+                    <Card key={index}>
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">{cont.nombreArtesano}</h4>
+                        <div className="flex items-center">
+                            <>
+                              {cont.fechaCreacion && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mr-4">
+                                  Generado: {new Date(cont.fechaCreacion).toLocaleString()}
+                                </p>
+                              )}
+                              <button
+                                onClick={() => handleCopy(cont.texto)}
+                                className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                title="Copiar contenido"
+                              >
+                                <ClipboardDocumentListIcon className="h-5 w-5" />
+                              </button>
+                              {cont.artesanoId !== 'base' && (
+                                <button
+                                  onClick={() => handleEliminarContenido(libroSeleccionado.id, cap.id, cont.artesanoId)}
+                                  className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-red-500 dark:text-red-400 ml-2"
+                                  title="Eliminar contenido"
+                                >
+                                  <TrashIcon className="h-5 w-5" />
+                                </button>
+                              )}
+                            </>
+                        </div>
                       </div>
-                    </div>
-                    <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{cont.texto}</p>
-                  </Card>
-                ))}
+                      <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 mt-2">{cont.texto}</p>
+                    </Card>
+                  )
+                })}
               </div>
             </div>
           )) : (
@@ -968,7 +976,7 @@ function App() {
           <Bars3Icon className="h-5 w-5" />
         </button>
         {vistaActual === 'Mis Libros' && renderVistaMisLibros()}
-        {vistaActual === 'Área de Trabajo' && renderVistaAreaDeTrabajo()}
+        {vistaActual === 'Área de Creación' && renderVistaAreaDeCreacion()}
         {vistaActual === 'Biblioteca' && renderVistaBiblioteca()}
         {vistaActual === 'Artesanos' && renderVistaArtesanos()}
       </main>
