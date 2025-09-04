@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import {
@@ -94,6 +94,7 @@ function App() {
   
   // Estado para "Biblioteca"
   const [filtroArtesano, setFiltroArtesano] = useState('todos');
+  const [capituloBibliotecaSeleccionado, setCapituloBibliotecaSeleccionado] = useState('todos');
 
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
@@ -188,7 +189,7 @@ function App() {
       localStorage.setItem('fabricaContenido_artesanos', JSON.stringify(artesanos));
     } catch (error) {
       console.error("Error al guardar artesanos en localStorage:", error);
-      mostrarNotificacion("Error al guardar los artesanos.");
+      // Removed direct call to mostrarNotificacion here
     }
   }, [artesanos]);
   useEffect(() => { localStorage.setItem('fabricaContenido_apiKey', apiKey); }, [apiKey]);
@@ -211,17 +212,52 @@ function App() {
     }
   }, [notificacion]);
 
-  // Guardar contenido generado automáticamente
+  // --- MANEJADORES DE EVENTOS ---
+
+  const mostrarNotificacion = useCallback((mensaje) => setNotificacion({ mensaje, visible: true }), [setNotificacion]);
+
+  const handleGuardarEnBiblioteca = useCallback(() => {
+    if (!capituloActivo || contenidoGenerado.length === 0) {
+      mostrarNotificacion("No hay contenido generado para guardar.");
+      return;
+    }
+
+    const nuevosLibros = libros.map(l => {
+      if (l.id === libroSeleccionado.id) {
+        const nuevosCapitulos = l.capitulos.map(c => {
+          if (c.id === capituloActivo.id) {
+            // Guardar texto base
+            const contenidoActualizado = [{ artesanoId: 'base', nombreArtesano: 'Texto Base', texto: textoBase }];
+            // Guardar/actualizar contenido generado
+            contenidoGenerado.forEach(gen => {
+              contenidoActualizado.push(gen);
+            });
+            // Mantener contenido de otros artesanos no seleccionados en esta ejecución
+            c.contenido.forEach(cont => {
+              if (cont.artesanoId !== 'base' && !contenidoActualizado.some(ca => ca.artesanoId === cont.artesanoId)) {
+                contenidoActualizado.push(cont);
+              }
+            });
+            return { ...c, contenido: contenidoActualizado };
+          }
+          return c;
+        });
+        return { ...l, capitulos: nuevosCapitulos };
+      }
+      return l;
+    });
+
+    setLibros(nuevosLibros);
+    setLibroSeleccionado(nuevosLibros.find(l => l.id === libroSeleccionado.id));
+    mostrarNotificacion("¡Contenido guardado en la Biblioteca!");
+  }, [capituloActivo, contenidoGenerado, libros, libroSeleccionado, setLibros, setLibroSeleccionado, mostrarNotificacion, textoBase]);
+
   useEffect(() => {
     if (!generandoContenido && contenidoGenerado.length > 0) {
       handleGuardarEnBiblioteca();
     }
-  }, [generandoContenido]);
+  }, [generandoContenido, contenidoGenerado.length, handleGuardarEnBiblioteca]);
 
-
-  // --- MANEJADORES DE EVENTOS ---
-
-  const mostrarNotificacion = (mensaje) => setNotificacion({ mensaje, visible: true });
 
   const abrirModalConfirmacion = (title, message, onConfirm) => {
     setModalConfirmacion({ isOpen: true, title, message, onConfirm });
@@ -462,42 +498,6 @@ function App() {
     }
     setGenerandoContenido(false);
     mostrarNotificacion("¡Contenido generado!");
-  };
-
-  const handleGuardarEnBiblioteca = () => {
-    if (!capituloActivo || contenidoGenerado.length === 0) {
-      mostrarNotificacion("No hay contenido generado para guardar.");
-      return;
-    }
-
-    const nuevosLibros = libros.map(l => {
-      if (l.id === libroSeleccionado.id) {
-        const nuevosCapitulos = l.capitulos.map(c => {
-          if (c.id === capituloActivo.id) {
-            // Guardar texto base
-            const contenidoActualizado = [{ artesanoId: 'base', nombreArtesano: 'Texto Base', texto: textoBase }];
-            // Guardar/actualizar contenido generado
-            contenidoGenerado.forEach(gen => {
-              contenidoActualizado.push(gen);
-            });
-            // Mantener contenido de otros artesanos no seleccionados en esta ejecución
-            c.contenido.forEach(cont => {
-              if (cont.artesanoId !== 'base' && !contenidoActualizado.some(ca => ca.artesanoId === cont.artesanoId)) {
-                contenidoActualizado.push(cont);
-              }
-            });
-            return { ...c, contenido: contenidoActualizado };
-          }
-          return c;
-        });
-        return { ...l, capitulos: nuevosCapitulos };
-      }
-      return l;
-    });
-
-    setLibros(nuevosLibros);
-    setLibroSeleccionado(nuevosLibros.find(l => l.id === libroSeleccionado.id));
-    mostrarNotificacion("¡Contenido guardado en la Biblioteca!");
   };
 
   const handleDescargarZip = () => {
@@ -870,7 +870,9 @@ function App() {
       );
     }
 
-    const contenidoFiltrado = libroSeleccionado.capitulos.map(cap => {
+    const contenidoFiltrado = libroSeleccionado.capitulos
+    .filter(cap => capituloBibliotecaSeleccionado === 'todos' || cap.id === parseFloat(capituloBibliotecaSeleccionado))
+    .map(cap => {
       const contenidos = cap.contenido.filter(cont =>
         filtroArtesano === 'todos' || String(cont.artesanoId) === filtroArtesano
       );
@@ -885,6 +887,10 @@ function App() {
             <Boton variant="secundario" onClick={() => setLibroSeleccionado(null)}>Cambiar Libro</Boton>
             <div className="flex items-center gap-2">
               <Cog6ToothIcon className="h-5 w-5" />
+              <select value={capituloBibliotecaSeleccionado} onChange={e => setCapituloBibliotecaSeleccionado(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3">
+                <option value="todos">Todos los capítulos</option>
+                {libroSeleccionado.capitulos.map(c => <option key={c.id} value={c.id}>{c.titulo}</option>)}
+              </select>
               <select value={filtroArtesano} onChange={e => setFiltroArtesano(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3">
                 <option value="todos">Filtrar por Artesano</option>
                 <option value="base">Texto Base</option>
