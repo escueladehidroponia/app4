@@ -105,6 +105,7 @@ function App() {
   // Estado para "Biblioteca"
   const [filtroArtesano, setFiltroArtesano] = useState('todos');
   const [capituloBibliotecaSeleccionado, setCapituloBibliotecaSeleccionado] = useState('todos');
+  const [filtroColeccionBiblioteca, setFiltroColeccionBiblioteca] = useState('todas');
 
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
@@ -972,11 +973,27 @@ function App() {
 
   const renderVistaBiblioteca = () => {
     if (!libroSeleccionado) {
+      const librosFiltrados = libros.filter(libro => 
+        filtroColeccionBiblioteca === 'todas' || 
+        (filtroColeccionBiblioteca === 'ninguna' && !libro.collectionId) ||
+        (libro.collectionId && libro.collectionId === filtroColeccionBiblioteca)
+      );
+
       return (
         <div>
-          <h2 className="text-2xl font-bold mb-6">Biblioteca</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Biblioteca</h2>
+            <div className="flex items-center gap-2">
+              <FolderIcon className="h-5 w-5 text-gray-500" />
+              <select value={filtroColeccionBiblioteca} onChange={e => setFiltroColeccionBiblioteca(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3">
+                <option value="todas">Todas las colecciones</option>
+                <option value="ninguna">Sin colección</option>
+                {colecciones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {libros.map(libro => (
+            {librosFiltrados.map(libro => (
               <Card key={libro.id} className="flex flex-col justify-between">
                 <div>
                   <h3 className="text-lg font-bold mb-2">{libro.titulo}</h3>
