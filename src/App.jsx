@@ -20,6 +20,8 @@ import {
   ClipboardDocumentListIcon,
   PencilIcon,
   FolderIcon,
+  ArrowLeftOnRectangleIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
@@ -75,6 +77,7 @@ function App() {
   const [notificacion, setNotificacion] = useState({ mensaje: '', visible: false });
   const [modoOscuro, setModoOscuro] = useState(false);
   const [sidebarAbierta, setSidebarAbierta] = useState(false);
+  const [sidebarColapsada, setSidebarColapsada] = useState(false);
 
   // Estado para modales de confirmación
   const [modalConfirmacion, setModalConfirmacion] = useState({ isOpen: false, onConfirm: () => {}, title: '', message: '' });
@@ -639,27 +642,30 @@ function App() {
   };
 
   const renderSidebar = () => (
-    <aside className={`absolute md:relative w-64 md:w-72 bg-gray-50 dark:bg-gray-800 h-full flex-shrink-0 flex flex-col border-r dark:border-gray-700 transition-transform duration-300 z-40 ${sidebarAbierta ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
-      <div className="p-4 flex justify-between items-center border-b dark:border-gray-700">
-        <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2"><InformationCircleIcon className="h-6 w-6" /> Fábrica v5.0</h1>
+    <aside className={`relative bg-gray-50 dark:bg-gray-800 h-full flex-shrink-0 flex flex-col border-r dark:border-gray-700 transition-all duration-300 z-40 ${sidebarColapsada ? 'w-20' : 'w-64'}`}>
+      <div className={`p-4 flex items-center border-b dark:border-gray-700 ${sidebarColapsada ? 'justify-center' : 'justify-between'}`}>
+        {!sidebarColapsada && <h1 className="text-xl font-bold text-blue-600 dark:text-blue-400 flex items-center gap-2"><InformationCircleIcon className="h-6 w-6" /> Fábrica v5.0</h1>}
+        <button onClick={() => setSidebarColapsada(!sidebarColapsada)} className="hidden md:block p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700">
+          {sidebarColapsada ? <ArrowRightOnRectangleIcon className="h-5 w-5" /> : <ArrowLeftOnRectangleIcon className="h-5 w-5" />}
+        </button>
         <button className="md:hidden" onClick={() => setSidebarAbierta(false)}><XMarkIcon className="h-5 w-5" /></button>
       </div>
       <nav className="flex-grow p-4 space-y-2">
         {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Colecciones', icon: <FolderIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <CodeBracketIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}].map(item => (
           <button key={item.id} onClick={() => { setVistaActual(item.id); setSidebarAbierta(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-left font-medium ${vistaActual === item.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-left font-medium ${sidebarColapsada ? 'justify-center' : ''} ${vistaActual === item.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
             {item.icon}
-            {item.id}
+            {!sidebarColapsada && <span>{item.id}</span>}
           </button>
         ))}
       </nav>
       <div className="p-4 border-t dark:border-gray-700 space-y-4">
-        <div>
+        <div className={`${sidebarColapsada ? 'hidden' : ''}`}>
           <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Clave API Gemini</label>
           <Input type="password" placeholder="Introduce tu clave de API" value={apiKey} onChange={e => setApiKey(e.target.value)} />
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">Modo Oscuro</span>
+        <div className={`flex items-center ${sidebarColapsada ? 'justify-center' : 'justify-between'}`}>
+          {!sidebarColapsada && <span className="text-sm font-medium">Modo Oscuro</span>}
           <button onClick={() => setModoOscuro(!modoOscuro)} className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
             {modoOscuro ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
           </button>
@@ -797,7 +803,7 @@ function App() {
               onChange={e => artesanoEditando ? setArtesanoEditando({...artesanoEditando, nombre: e.target.value}) : setNuevoArtesano({...nuevoArtesano, nombre: e.target.value})}
             />
             <Textarea 
-              placeholder="Prompt para la IA (ej. 'Re-escribe el siguiente texto con un tono profesional y académico...)" 
+              placeholder="Prompt para la IA (ej. 'Re-escribe el siguiente texto con un tono profesional y académico...')" 
               rows="6"
               value={artesanoEditando ? artesanoEditando.prompt : nuevoArtesano.prompt}
               onChange={e => artesanoEditando ? setArtesanoEditando({...artesanoEditando, prompt: e.target.value}) : setNuevoArtesano({...nuevoArtesano, prompt: e.target.value})}
