@@ -19,6 +19,7 @@ import {
   Bars3Icon,
   ClipboardDocumentListIcon,
   PencilIcon,
+  FolderIcon,
 } from '@heroicons/react/24/outline'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
@@ -68,6 +69,7 @@ function App() {
   const [vistaActual, setVistaActual] = useState('Mis Libros');
   const [libros, setLibros] = useState([]);
   const [artesanos, setArtesanos] = useState([]);
+  const [colecciones, setColecciones] = useState([]);
   const [apiKey, setApiKey] = useState('');
   const [libroSeleccionado, setLibroSeleccionado] = useState(null);
   const [notificacion, setNotificacion] = useState({ mensaje: '', visible: false });
@@ -81,9 +83,14 @@ function App() {
   const [artesanoEditando, setArtesanoEditando] = useState(null);
   const [nuevoArtesano, setNuevoArtesano] = useState({ nombre: '', prompt: '' });
 
+  // Estado para la vista "Colecciones"
+  const [coleccionEditando, setColeccionEditando] = useState(null);
+  const [nuevaColeccion, setNuevaColeccion] = useState({ nombre: '' });
+
   // Estado para la vista "Mis Libros"
   const [nuevoLibro, setNuevoLibro] = useState({ titulo: '', indice: '' });
   const [libroEditando, setLibroEditando] = useState(null);
+  const [filtroColeccion, setFiltroColeccion] = useState('todas');
 
   // Estado para "Área de Creación"
   const [capituloActivo, setCapituloActivo] = useState(null);
@@ -98,6 +105,7 @@ function App() {
 
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
+  const isFirstRenderColecciones = useRef(true);
 
   // --- EFECTOS (PERSISTENCIA Y OTROS) ---
 
@@ -106,40 +114,40 @@ function App() {
     // Cargar Libros
     try {
       const librosGuardados = localStorage.getItem('fabricaContenido_libros');
-      console.log("Cargando libros: Valor de 'fabricaContenido_libros' en localStorage:", librosGuardados);
       if (librosGuardados) {
-        const parsedLibros = JSON.parse(librosGuardados);
-        setLibros(parsedLibros);
-        console.log("Cargando libros: Libros parseados y establecidos:", parsedLibros);
+        setLibros(JSON.parse(librosGuardados));
       }
     } catch (error) {
       console.error("Error al cargar libros de localStorage:", error);
       setLibros([]);
     }
 
+    // Cargar Colecciones
+    try {
+      const coleccionesGuardadas = localStorage.getItem('fabricaContenido_colecciones');
+      if (coleccionesGuardadas) {
+        setColecciones(JSON.parse(coleccionesGuardadas));
+      }
+    } catch (error) {
+      console.error("Error al cargar colecciones de localStorage:", error);
+      setColecciones([]);
+    }
+
     // Cargar Artesanos
     try {
       const artesanosGuardados = localStorage.getItem('fabricaContenido_artesanos');
-      console.log("localStorage.getItem('fabricaContenido_artesanos') returned:", artesanosGuardados);
       let loadedArtesanos = [];
-
       if (artesanosGuardados !== null) {
         loadedArtesanos = JSON.parse(artesanosGuardados);
-        console.log("JSON.parse(artesanosGuardados) returned:", loadedArtesanos);
       }
-
-      // If loadedArtesanos is empty (either from null localStorage or "[]" in localStorage),
-      // then use the default artisans.
-      if (artesanosGuardados === null) { // If nothing was ever saved, load defaults
-        console.log("Loading default artisans (localStorage was null).");
+      if (artesanosGuardados === null) {
         const artesanosDefault = [
           { id: 1, nombre: 'Corrector Ortográfico y Gramatical', prompt: 'Corrige la ortografía y la gramática del siguiente texto. No alteres el significado ni el estilo. Simplemente devuelve el texto corregido.' },
           { id: 2, nombre: 'Resumen Ejecutivo (50 palabras)', prompt: 'Crea un resumen ejecutivo de no más de 50 palabras para el siguiente texto.' },
           { id: 3, nombre: 'Transformar a Tono Casual', prompt: 'Re-escribe el siguiente texto con un tono más casual, amigable y conversacional, como si se lo estuvieras contando a un amigo.' },
         ];
         setArtesanos(artesanosDefault);
-      } else { // If something was saved (even an empty array), use that
-        console.log("Loading saved artisans (from localStorage).");
+      } else {
         setArtesanos(loadedArtesanos);
       }
     } catch (error) {
@@ -174,24 +182,31 @@ function App() {
   useEffect(() => {
     if (isFirstRenderLibros.current) {
       isFirstRenderLibros.current = false;
-      return; // Don't run on first render
+      return;
     }
-    console.log("Guardando libros: Estado actual de libros para guardar:", libros);
     localStorage.setItem('fabricaContenido_libros', JSON.stringify(libros));
   }, [libros]);
+
+  useEffect(() => {
+    if (isFirstRenderColecciones.current) {
+      isFirstRenderColecciones.current = false;
+      return;
+    }
+    localStorage.setItem('fabricaContenido_colecciones', JSON.stringify(colecciones));
+  }, [colecciones]);
+
   useEffect(() => {
     if (isFirstRenderArtesanos.current) {
       isFirstRenderArtesanos.current = false;
-      return; // Don't run on first render
+      return;
     }
     try {
-      console.log("Attempting to save artisans:", artesanos);
       localStorage.setItem('fabricaContenido_artesanos', JSON.stringify(artesanos));
     } catch (error) {
       console.error("Error al guardar artesanos en localStorage:", error);
-      // Removed direct call to mostrarNotificacion here
     }
   }, [artesanos]);
+
   useEffect(() => { localStorage.setItem('fabricaContenido_apiKey', apiKey); }, [apiKey]);
   useEffect(() => { localStorage.setItem('fabricaContenido_modoOscuro', JSON.stringify(modoOscuro)); }, [modoOscuro]);
 
@@ -226,13 +241,10 @@ function App() {
       if (l.id === libroSeleccionado.id) {
         const nuevosCapitulos = l.capitulos.map(c => {
           if (c.id === capituloActivo.id) {
-            // Guardar texto base
             const contenidoActualizado = [{ artesanoId: 'base', nombreArtesano: 'Texto Base', texto: textoBase }];
-            // Guardar/actualizar contenido generado
             contenidoGenerado.forEach(gen => {
               contenidoActualizado.push(gen);
             });
-            // Mantener contenido de otros artesanos no seleccionados en esta ejecución
             c.contenido.forEach(cont => {
               if (cont.artesanoId !== 'base' && !contenidoActualizado.some(ca => ca.artesanoId === cont.artesanoId)) {
                 contenidoActualizado.push(cont);
@@ -278,7 +290,7 @@ function App() {
       id: Date.now() + Math.random(),
       titulo: titulo.trim(),
       completado: false,
-      contenido: [] // { artesanoId, nombreArtesano, texto, fechaCreacion }
+      contenido: []
     }));
 
     const nuevo = {
@@ -286,16 +298,15 @@ function App() {
       titulo: nuevoLibro.titulo.trim(),
       capitulos,
       fechaCreacion: new Date().toISOString(),
+      collectionId: null,
     };
     setLibros([...libros, nuevo]);
     setNuevoLibro({ titulo: '', indice: '' });
     mostrarNotificacion("¡Libro creado con éxito!");
-    console.log("Libro creado. Estado actual de libros:", [...libros, nuevo]);
   };
 
   const handleGuardarLibro = () => {
     if (!libroEditando) return;
-
     setLibros(libros.map(l => l.id === libroEditando.id ? libroEditando : l));
     setLibroEditando(null);
     mostrarNotificacion("Libro actualizado con éxito.");
@@ -313,12 +324,18 @@ function App() {
     };
     abrirModalConfirmacion("Confirmar Eliminación", "¿Estás seguro de que quieres eliminar este libro y todo su contenido? Esta acción es irreversible.", onConfirm);
   };
+
+  const handleAsignarColeccion = (idLibro, collectionId) => {
+    setLibros(libros.map(l => l.id === idLibro ? { ...l, collectionId: collectionId === 'ninguna' ? null : collectionId } : l));
+    mostrarNotificacion("Libro asignado a colección.");
+  };
   
   const handleExportarBiblioteca = () => {
     try {
       const datos = {
         libros,
         artesanos,
+        colecciones,
       };
       const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
       saveAs(blob, `biblioteca_fabrica_contenido_${new Date().toISOString().split('T')[0]}.json`);
@@ -337,8 +354,9 @@ function App() {
       try {
         const datos = JSON.parse(event.target.result);
         if (datos.libros && datos.artesanos) {
-          setLibros(datos.libros);
-          setArtesanos(datos.artesanos);
+          setLibros(datos.libros || []);
+          setArtesanos(datos.artesanos || []);
+          setColecciones(datos.colecciones || []);
           mostrarNotificacion("Biblioteca importada con éxito.");
         } else {
           mostrarNotificacion("Archivo de importación no válido.");
@@ -349,7 +367,38 @@ function App() {
       }
     };
     reader.readAsText(file);
-    e.target.value = null; // Para permitir re-importar el mismo archivo
+    e.target.value = null;
+  };
+
+  // --- Lógica de "Colecciones" ---
+  const handleGuardarColeccion = (e) => {
+    e.preventDefault();
+    const target = coleccionEditando ? coleccionEditando : nuevaColeccion;
+    if (!target.nombre.trim()) {
+      mostrarNotificacion("El nombre de la colección es obligatorio.");
+      return;
+    }
+
+    if (coleccionEditando) {
+      setColecciones(colecciones.map(c => c.id === coleccionEditando.id ? coleccionEditando : c));
+      mostrarNotificacion("Colección actualizada.");
+    } else {
+      setColecciones([...colecciones, { ...nuevaColeccion, id: Date.now() }]);
+      mostrarNotificacion("Colección creada.");
+    }
+    setColeccionEditando(null);
+    setNuevaColeccion({ nombre: '' });
+  };
+
+  const handleEliminarColeccion = (idColeccion) => {
+    const onConfirm = () => {
+      setColecciones(colecciones.filter(c => c.id !== idColeccion));
+      // Desasignar libros de la colección eliminada
+      setLibros(libros.map(l => l.collectionId === idColeccion ? { ...l, collectionId: null } : l));
+      mostrarNotificacion("Colección eliminada.");
+      cerrarModalConfirmacion();
+    };
+    abrirModalConfirmacion("Confirmar Eliminación", "¿Estás seguro de que quieres eliminar esta colección? Los libros no serán eliminados.", onConfirm);
   };
 
 
@@ -415,7 +464,6 @@ function App() {
     setCapituloActivo(capitulo);
     setTextoBase('');
     setContenidoGenerado([]);
-    // Cargar contenido si ya existe
     const contenidoExistente = capitulo.contenido.find(c => c.artesanoId === 'base');
     if (contenidoExistente) {
       setTextoBase(contenidoExistente.texto);
@@ -440,7 +488,6 @@ function App() {
       return;
     }
 
-    // Check for existing content
     const artesanosConContenido = artesanosActivos.filter(artesano =>
       capituloActivo.contenido.some(c => c.artesanoId === artesano.id)
     );
@@ -485,7 +532,7 @@ function App() {
           texto: textoResultado,
           fechaCreacion: new Date().toISOString(),
         });
-        setContenidoGenerado([...resultados]); // Actualizar UI en tiempo real
+        setContenidoGenerado([...resultados]);
       } catch (error) {
         console.error(`Error con el artesano ${artesano.nombre}:`, error);
         resultados.push({
@@ -547,9 +594,6 @@ function App() {
 
   // --- RENDERIZADO DE VISTAS ---
 
-
-  // --- RENDERIZADO DE VISTAS ---
-
   const renderNotificacion = () => (
     <div className={`fixed top-5 right-5 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transition-transform duration-300 ${notificacion.visible ? 'translate-x-0' : 'translate-x-[120%]'}`}>
       {notificacion.mensaje}
@@ -601,7 +645,7 @@ function App() {
         <button className="md:hidden" onClick={() => setSidebarAbierta(false)}><XMarkIcon className="h-5 w-5" /></button>
       </div>
       <nav className="flex-grow p-4 space-y-2">
-        {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}].map(item => (
+        {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Colecciones', icon: <FolderIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <CodeBracketIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}].map(item => (
           <button key={item.id} onClick={() => { setVistaActual(item.id); setSidebarAbierta(false); }}
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-left font-medium ${vistaActual === item.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
             {item.icon}
@@ -630,11 +674,27 @@ function App() {
       return libro.capitulos.length > 0 ? (completados / libro.capitulos.length) * 100 : 0;
     };
 
+    const librosFiltrados = libros.filter(libro => 
+      filtroColeccion === 'todas' || 
+      (filtroColeccion === 'ninguna' && !libro.collectionId) ||
+      (libro.collectionId && libro.collectionId === filtroColeccion)
+    );
+
     return (
       <div>
-        <h2 className="text-2xl font-bold mb-6">Mis Libros</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Mis Libros</h2>
+          <div className="flex items-center gap-2">
+            <FolderIcon className="h-5 w-5 text-gray-500" />
+            <select value={filtroColeccion} onChange={e => setFiltroColeccion(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3">
+              <option value="todas">Todas las colecciones</option>
+              <option value="ninguna">Sin colección</option>
+              {colecciones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </select>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {libros.map(libro => (
+          {librosFiltrados.map(libro => (
             <Card key={libro.id} className="flex flex-col justify-between">
               <div>
                 <h3 className="text-lg font-bold mb-2">{libro.titulo}</h3>
@@ -648,6 +708,17 @@ function App() {
                   <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${calcularProgreso(libro)}%` }}></div>
                 </div>
                 <p className="text-xs text-right mt-1">{Math.round(calcularProgreso(libro))}% completado</p>
+                 <div className="mt-4">
+                  <label className="text-xs font-medium text-gray-500">Colección:</label>
+                  <select 
+                    value={libro.collectionId || 'ninguna'} 
+                    onChange={(e) => handleAsignarColeccion(libro.id, e.target.value)}
+                    className="w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 text-sm"
+                  >
+                    <option value="ninguna">Sin colección</option>
+                    {colecciones.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <Boton onClick={() => handleSeleccionarLibro(libro)} className="flex-1">Abrir</Boton>
@@ -678,6 +749,40 @@ function App() {
       </div>
     );
   };
+
+  const renderVistaColecciones = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Colecciones de Libros</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card>
+          <h3 className="text-lg font-bold mb-4">{coleccionEditando ? 'Editar Colección' : 'Crear Nueva Colección'}</h3>
+          <form onSubmit={handleGuardarColeccion} className="space-y-4">
+            <Input 
+              placeholder="Nombre de la colección" 
+              value={coleccionEditando ? coleccionEditando.nombre : nuevaColeccion.nombre}
+              onChange={e => coleccionEditando ? setColeccionEditando({...coleccionEditando, nombre: e.target.value}) : setNuevaColeccion({...nuevaColeccion, nombre: e.target.value})}
+            />
+            <div className="flex gap-2">
+              <Boton type="submit" className="flex-1">{coleccionEditando ? 'Guardar Cambios' : 'Crear Colección'}</Boton>
+              {coleccionEditando && <Boton variant="secundario" onClick={() => setColeccionEditando(null)}>Cancelar</Boton>}
+            </div>
+          </form>
+        </Card>
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold mb-4">Lista de Colecciones</h3>
+          {colecciones.map(coleccion => (
+            <Card key={coleccion.id} className="flex justify-between items-center">
+              <p className="font-medium">{coleccion.nombre}</p>
+              <div className="flex gap-2">
+                <Boton variant="secundario" onClick={() => setColeccionEditando(coleccion)}>Editar</Boton>
+                <Boton variant="peligro" onClick={() => handleEliminarColeccion(coleccion.id)}><TrashIcon className="h-5 w-5" /></Boton>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   const renderVistaArtesanos = () => (
     <div>
@@ -982,6 +1087,7 @@ function App() {
           <Bars3Icon className="h-5 w-5" />
         </button>
         {vistaActual === 'Mis Libros' && renderVistaMisLibros()}
+        {vistaActual === 'Colecciones' && renderVistaColecciones()}
         {vistaActual === 'Área de Creación' && renderVistaAreaDeCreacion()}
         {vistaActual === 'Biblioteca' && renderVistaBiblioteca()}
         {vistaActual === 'Artesanos' && renderVistaArtesanos()}
