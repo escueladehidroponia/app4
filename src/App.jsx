@@ -973,10 +973,26 @@ function App() {
   const renderVistaBiblioteca = () => {
     if (!libroSeleccionado) {
       return (
-        <div className="text-center py-20">
-          <p className="text-4xl mx-auto text-gray-400 mb-4"><BuildingLibraryIcon className="h-10 w-10" /></p>
-          <h2 className="text-2xl font-bold">Biblioteca</h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">Selecciona un libro desde "Mis Libros" para ver su contenido.</p>
+        <div>
+          <h2 className="text-2xl font-bold mb-6">Biblioteca</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {libros.map(libro => (
+              <Card key={libro.id} className="flex flex-col justify-between">
+                <div>
+                  <h3 className="text-lg font-bold mb-2">{libro.titulo}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">{libro.capitulos.length} capítulos</p>
+                  {libro.fechaCreacion && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+                      Creado: {new Date(libro.fechaCreacion).toLocaleDateString()}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Boton onClick={() => setLibroSeleccionado(libro)} className="flex-1">Abrir</Boton>
+                </div>
+              </Card>
+            ))}
+          </div>
         </div>
       );
     }
