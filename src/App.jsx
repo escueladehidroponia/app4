@@ -101,7 +101,13 @@ function App() {
   const [artesanosSeleccionados, setArtesanosSeleccionados] = useState({});
   const [generandoContenido, setGenerandoContenido] = useState(false);
   const [contenidoGenerado, setContenidoGenerado] = useState([]);
+  const [traducciones, setTraducciones] = useState([]);
   
+  // Estado para el Artesano Multicultural
+  const [idiomasDisponibles] = useState(['Inglés', 'Francés', 'Alemán', 'Portugués', 'Italiano']);
+  const [idiomasSeleccionados, setIdiomasSeleccionados] = useState([]);
+
+
   // Estado para "Biblioteca"
   const [filtroArtesano, setFiltroArtesano] = useState('todos');
   const [capituloBibliotecaSeleccionado, setCapituloBibliotecaSeleccionado] = useState('todos');
@@ -149,9 +155,15 @@ function App() {
           { id: 1, nombre: 'Corrector Ortográfico y Gramatical', prompt: 'Corrige la ortografía y la gramática del siguiente texto. No alteres el significado ni el estilo. Simplemente devuelve el texto corregido.' },
           { id: 2, nombre: 'Resumen Ejecutivo (50 palabras)', prompt: 'Crea un resumen ejecutivo de no más de 50 palabras para el siguiente texto.' },
           { id: 3, nombre: 'Transformar a Tono Casual', prompt: 'Re-escribe el siguiente texto con un tono más casual, amigable y conversacional, como si se lo estuvieras contando a un amigo.' },
+		  { id: 'multicultural', nombre: 'Artesano Multicultural', prompt: 'Este es un artesano especial para traducciones.' },
         ];
         setArtesanos(artesanosDefault);
       } else {
+        // Asegurarse de que el artesano multicultural exista si se cargan desde localStorage
+        const multiculturalExists = loadedArtesanos.some(a => a.id === 'multicultural');
+        if (!multiculturalExists) {
+          loadedArtesanos.push({ id: 'multicultural', nombre: 'Artesano Multicultural', prompt: 'Este es un artesano especial para traducciones.' });
+        }
         setArtesanos(loadedArtesanos);
       }
     } catch (error) {
@@ -160,6 +172,7 @@ function App() {
         { id: 1, nombre: 'Corrector Ortográfico y Gramatical', prompt: 'Corrige la ortografía y la gramática del siguiente texto. No alteres el significado ni el estilo. Simplemente devuelve el texto corregido.' },
         { id: 2, nombre: 'Resumen Ejecutivo (50 palabras)', prompt: 'Crea un resumen ejecutivo de no más de 50 palabras para el siguiente texto.' },
         { id: 3, nombre: 'Transformar a Tono Casual', prompt: 'Re-escribe el siguiente texto con un tono más casual, amigable y conversacional, como si se lo estuvieras contando a un amigo.' },
+		{ id: 'multicultural', nombre: 'Artesano Multicultural', prompt: 'Este es un artesano especial para traducciones.' },
       ];
       setArtesanos(artesanosDefault);
     }
@@ -236,15 +249,16 @@ function App() {
   const mostrarNotificacion = useCallback((mensaje) => setNotificacion({ mensaje, visible: true }), [setNotificacion]);
 
   const handleGuardarEnBiblioteca = useCallback(() => {
-    if (!capituloActivo || contenidoGenerado.length === 0) {
+    if (!capituloActivo || (contenidoGenerado.length === 0 && traducciones.length === 0)) {
       mostrarNotificacion("No hay contenido generado para guardar.");
       return;
     }
-
+  
     const nuevosLibros = libros.map(l => {
       if (l.id === libroSeleccionado.id) {
         const nuevosCapitulos = l.capitulos.map(c => {
           if (c.id === capituloActivo.id) {
+            // Contenido base y de artesanos normales
             const contenidoActualizado = [{ artesanoId: 'base', nombreArtesano: 'Texto Base', texto: textoBase }];
             contenidoGenerado.forEach(gen => {
               contenidoActualizado.push(gen);
@@ -254,7 +268,19 @@ function App() {
                 contenidoActualizado.push(cont);
               }
             });
-            return { ...c, contenido: contenidoActualizado };
+  
+            // Añadir o actualizar traducciones
+            const traduccionesActualizadas = c.traducciones ? [...c.traducciones] : [];
+            traducciones.forEach(trad => {
+              const index = traduccionesActualizadas.findIndex(t => t.idioma === trad.idioma);
+              if (index > -1) {
+                traduccionesActualizadas[index] = trad; // Sobrescribir
+              } else {
+                traduccionesActualizadas.push(trad); // Añadir
+              }
+            });
+  
+            return { ...c, contenido: contenidoActualizado, traducciones: traduccionesActualizadas };
           }
           return c;
         });
@@ -262,17 +288,20 @@ function App() {
       }
       return l;
     });
-
+  
     setLibros(nuevosLibros);
     setLibroSeleccionado(nuevosLibros.find(l => l.id === libroSeleccionado.id));
     mostrarNotificacion("¡Contenido guardado en la Biblioteca!");
-  }, [capituloActivo, contenidoGenerado, libros, libroSeleccionado, setLibros, setLibroSeleccionado, mostrarNotificacion, textoBase]);
+    // Limpiar los estados de generación
+    setContenidoGenerado([]);
+    setTraducciones([]);
+  }, [capituloActivo, contenidoGenerado, traducciones, libros, libroSeleccionado, setLibros, setLibroSeleccionado, mostrarNotificacion, textoBase]);
 
   useEffect(() => {
-    if (!generandoContenido && contenidoGenerado.length > 0) {
+    if (!generandoContenido && (contenidoGenerado.length > 0 || traducciones.length > 0)) {
       handleGuardarEnBiblioteca();
     }
-  }, [generandoContenido, contenidoGenerado.length, handleGuardarEnBiblioteca]);
+  }, [generandoContenido, contenidoGenerado.length, traducciones.length, handleGuardarEnBiblioteca]);
 
 
   const abrirModalConfirmacion = (title, message, onConfirm) => {
@@ -294,7 +323,8 @@ function App() {
       id: Date.now() + Math.random(),
       titulo: titulo.trim(),
       completado: false,
-      contenido: []
+      contenido: [],
+      traducciones: []
     }));
 
     const nuevo = {
@@ -477,8 +507,8 @@ function App() {
   const handleGenerarContenido = async () => {
     const artesanosActivos = Object.entries(artesanosSeleccionados)
       .filter(([, seleccionado]) => seleccionado)
-      .map(([id]) => artesanos.find(a => a.id === parseInt(id)));
-
+      .map(([id]) => artesanos.find(a => a.id.toString() === id.toString()));
+  
     if (!apiKey) {
       mostrarNotificacion("Por favor, introduce tu clave de API de Gemini.");
       return;
@@ -491,11 +521,18 @@ function App() {
       mostrarNotificacion("Selecciona al menos un artesano.");
       return;
     }
-
-    const artesanosConContenido = artesanosActivos.filter(artesano =>
+  
+    const esMulticultural = artesanosActivos.some(a => a.id === 'multicultural');
+    if (esMulticultural && idiomasSeleccionados.length === 0) {
+      mostrarNotificacion("Por favor, selecciona al menos un idioma para el Artesano Multicultural.");
+      return;
+    }
+  
+    const artesanosNormales = artesanosActivos.filter(a => a.id !== 'multicultural');
+    const artesanosConContenido = artesanosNormales.filter(artesano =>
       capituloActivo.contenido.some(c => c.artesanoId === artesano.id)
     );
-
+  
     if (artesanosConContenido.length > 0) {
       const nombresArtesanos = artesanosConContenido.map(a => a.nombre).join(', ');
       abrirModalConfirmacion(
@@ -511,9 +548,13 @@ function App() {
   const proceedWithGeneration = async (artesanosActivos) => {
     setGenerandoContenido(true);
     setContenidoGenerado([]);
-
+    setTraducciones([]);
+  
+    const artesanosNormales = artesanosActivos.filter(a => a.id !== 'multicultural');
+    const esMulticultural = artesanosActivos.some(a => a.id === 'multicultural');
+  
     const resultados = [];
-    for (const artesano of artesanosActivos) {
+    for (const artesano of artesanosNormales) {
       try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
           method: 'POST',
@@ -522,12 +563,12 @@ function App() {
             contents: [{ parts: [{ text: `${artesano.prompt}\n\n--- TEXTO A TRANSFORMAR ---\n\n${textoBase}` }] }]
           })
         });
-
+  
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(`Error de API: ${errorData.error.message}`);
         }
-
+  
         const data = await response.json();
         const textoResultado = data.candidates[0].content.parts[0].text;
         resultados.push({
@@ -547,8 +588,50 @@ function App() {
         setContenidoGenerado([...resultados]);
       }
     }
+  
+    if (esMulticultural) {
+      await generarTraducciones();
+    }
+  
     setGenerandoContenido(false);
-    mostrarNotificacion("¡Contenido generado!");
+    mostrarNotificacion("¡Proceso de generación completado!");
+  };
+  
+  const generarTraducciones = async () => {
+    const resultadosTraduccion = [];
+    for (const idioma of idiomasSeleccionados) {
+      try {
+        const prompt = `Traduce el siguiente texto al ${idioma}. Mantén el significado y el tono originales. Devuelve únicamente el texto traducido.`;
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${prompt}\n\n--- TEXTO A TRANSFORMAR ---\n\n${textoBase}` }] }]
+          })
+        });
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Error de API: ${errorData.error.message}`);
+        }
+  
+        const data = await response.json();
+        const textoResultado = data.candidates[0].content.parts[0].text;
+        resultadosTraduccion.push({
+          idioma: idioma,
+          texto: textoResultado,
+          fechaCreacion: new Date().toISOString(),
+        });
+        setTraducciones([...resultadosTraduccion]);
+      } catch (error) {
+        console.error(`Error al traducir a ${idioma}:`, error);
+        resultadosTraduccion.push({
+          idioma: idioma,
+          texto: `**ERROR AL TRADUCIR:** ${error.message}`,
+        });
+        setTraducciones([...resultadosTraduccion]);
+      }
+    }
   };
 
   const handleDescargarZip = () => {
@@ -718,7 +801,7 @@ function App() {
                  <div className="mt-4">
                   <label className="text-xs font-medium text-gray-500">Colección:</label>
                   <select 
-                    value={libro.collectionId || 'ninguna'} 
+                    value={libro.collectionId || 'ninguna'}
                     onChange={(e) => handleAsignarColeccion(libro.id, e.target.value)}
                     className="w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 text-sm"
                   >
@@ -848,6 +931,12 @@ function App() {
       setArtesanosSeleccionados(seleccionados);
     };
 
+    const handleIdiomaSelection = (idioma) => {
+        setIdiomasSeleccionados(prev => 
+          prev.includes(idioma) ? prev.filter(i => i !== idioma) : [...prev, idioma]
+        );
+      };
+
     return (
       <div>
         <div className="flex justify-between items-center mb-6">
@@ -897,12 +986,25 @@ function App() {
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {artesanos.map(a => (
-                      <label key={a.id} className="flex items-center gap-2 p-2 rounded-md bg-gray-100 dark:bg-gray-700/50">
+                      <label key={a.id} className={`flex items-center gap-2 p-2 rounded-md bg-gray-100 dark:bg-gray-700/50 ${a.id === 'multicultural' ? 'col-span-full bg-blue-100 dark:bg-blue-900/30' : ''}`}>
                         <input type="checkbox" checked={!!artesanosSeleccionados[a.id]} onChange={e => setArtesanosSeleccionados({...artesanosSeleccionados, [a.id]: e.target.checked})} />
-                        <span className="text-sm">{a.nombre}</span>
+                        <span className="text-sm font-medium">{a.nombre}</span>
                       </label>
                     ))}
                   </div>
+                   {artesanosSeleccionados['multicultural'] && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <h5 className="font-semibold mb-2">Idiomas para Traducción</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {idiomasDisponibles.map(idioma => (
+                          <label key={idioma} className="flex items-center gap-2 text-sm">
+                            <input type="checkbox" checked={idiomasSeleccionados.includes(idioma)} onChange={() => handleIdiomaSelection(idioma)} />
+                            {idioma}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </Card>
                 <div className="flex flex-col md:flex-row gap-4">
                   <Boton onClick={handleGenerarContenido} disabled={generandoContenido} className="flex-1">
@@ -912,7 +1014,7 @@ function App() {
                 </div>
                 
                 {/* Panel de Resultados */}
-                {(generandoContenido || contenidoGenerado.length > 0) && (
+                {(generandoContenido || contenidoGenerado.length > 0 || traducciones.length > 0) && (
                   <div className="space-y-4 pt-6">
                     <h3 className="text-xl font-bold">Resultados de Generación</h3>
                     {contenidoGenerado.map((item, index) => (
@@ -921,7 +1023,13 @@ function App() {
                         <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{item.texto}</p>
                       </Card>
                     ))}
-                    {generandoContenido && contenidoGenerado.length < Object.values(artesanosSeleccionados).filter(Boolean).length && (
+                    {traducciones.map((item, index) => (
+                        <Card key={index}>
+                          <h4 className="font-bold text-green-600 dark:text-green-400 mb-2">Traducción: {item.idioma}</h4>
+                          <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{item.texto}</p>
+                        </Card>
+                      ))}
+                    {generandoContenido && (
                        <Card className="text-center">
                          <p className="animate-pulse">Procesando...</p>
                        </Card>
