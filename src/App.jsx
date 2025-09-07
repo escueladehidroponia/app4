@@ -1125,11 +1125,14 @@ function App() {
     const contenidoFiltrado = libroSeleccionado.capitulos
     .filter(cap => capituloBibliotecaSeleccionado === 'todos' || cap.id === parseFloat(capituloBibliotecaSeleccionado))
     .map(cap => {
-      const contenidos = cap.contenido.filter(cont =>
-        filtroArtesano === 'todos' || String(cont.artesanoId) === filtroArtesano
-      );
-      return { ...cap, contenidos };
-    }).filter(cap => cap.contenidos.length > 0);
+        const contenidos = cap.contenido.filter(cont =>
+            filtroArtesano === 'todos' || String(cont.artesanoId) === filtroArtesano
+        );
+        const traduccionesFiltradas = cap.traducciones ? cap.traducciones.filter(trad =>
+            filtroArtesano === 'todos' || filtroArtesano === 'multicultural'
+        ) : [];
+        return { ...cap, contenidos, traducciones: traduccionesFiltradas };
+    }).filter(cap => cap.contenidos.length > 0 || cap.traducciones.length > 0);
 
     return (
       <div>
@@ -1144,7 +1147,7 @@ function App() {
                 {libroSeleccionado.capitulos.map(c => <option key={c.id} value={c.id}>{c.titulo}</option>)}
               </select>
               <select value={filtroArtesano} onChange={e => setFiltroArtesano(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3">
-                <option value="todos">Filtrar por Artesano</option>
+                <option value="todos">Todos los Artesanos</option>
                 <option value="base">Texto Base</option>
                 {artesanos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
@@ -1162,10 +1165,8 @@ function App() {
                 </Boton>
               </div>
               <div className="space-y-4">
-                {cap.contenidos.map((cont, index) => {
-
-                  return (
-                    <Card key={index}>
+                {cap.contenidos.map((cont, index) => (
+                    <Card key={`cont-${index}`}>
                       <div className="flex justify-between items-start">
                         <h4 className="font-bold text-blue-600 dark:text-blue-400 mb-2">{cont.nombreArtesano}</h4>
                         <div className="flex items-center">
@@ -1196,8 +1197,29 @@ function App() {
                       </div>
                       <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 mt-2">{cont.texto}</p>
                     </Card>
-                  )
-                })}
+                ))}
+                {cap.traducciones && cap.traducciones.map((trad, index) => (
+                    <Card key={`trad-${index}`}>
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-bold text-green-600 dark:text-green-400 mb-2">Traducción: {trad.idioma}</h4>
+                        <div className="flex items-center">
+                            {trad.fechaCreacion && (
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mr-4">
+                                Generado: {new Date(trad.fechaCreacion).toLocaleString()}
+                              </p>
+                            )}
+                            <button
+                              onClick={() => handleCopy(trad.texto)}
+                              className="p-1 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400"
+                              title="Copiar contenido"
+                            >
+                              <ClipboardDocumentListIcon className="h-5 w-5" />
+                            </button>
+                        </div>
+                      </div>
+                      <p className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 mt-2">{trad.texto}</p>
+                    </Card>
+                ))}
               </div>
             </div>
           )) : (
