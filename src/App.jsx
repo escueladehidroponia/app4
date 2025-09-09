@@ -85,6 +85,11 @@ function App() {
   // Estado para la vista "Artesanos"
   const [artesanoEditando, setArtesanoEditando] = useState(null);
   const [nuevoArtesano, setNuevoArtesano] = useState({ nombre: '', prompt: '' });
+  const [gruposArtesanos, setGruposArtesanos] = useState([]);
+  const [grupoArtesanoEditando, setGrupoArtesanoEditando] = useState(null);
+  const [nuevoGrupoArtesano, setNuevoGrupoArtesano] = useState({ nombre: '', artesanoIds: [] });
+  const [modalGrupoArtesanoOpen, setModalGrupoArtesanoOpen] = useState(false);
+
 
   // Estado para la vista "Colecciones"
   const [coleccionEditando, setColeccionEditando] = useState(null);
@@ -116,6 +121,8 @@ function App() {
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
   const isFirstRenderColecciones = useRef(true);
+  const isFirstRenderGruposArtesanos = useRef(true);
+
 
   // --- EFECTOS (PERSISTENCIA Y OTROS) ---
 
@@ -177,6 +184,18 @@ function App() {
       setArtesanos(artesanosDefault);
     }
 
+    // Cargar Grupos de Artesanos
+    try {
+      const gruposGuardados = localStorage.getItem('fabricaContenido_gruposArtesanos');
+      if (gruposGuardados) {
+        setGruposArtesanos(JSON.parse(gruposGuardados));
+      }
+    } catch (error) {
+      console.error("Error al cargar grupos de artesanos de localStorage:", error);
+      setGruposArtesanos([]);
+    }
+
+
     // Cargar API Key
     const apiKeyGuardada = localStorage.getItem('fabricaContenido_apiKey');
     if (apiKeyGuardada) {
@@ -223,6 +242,19 @@ function App() {
       console.error("Error al guardar artesanos en localStorage:", error);
     }
   }, [artesanos]);
+
+  useEffect(() => {
+    if (isFirstRenderGruposArtesanos.current) {
+      isFirstRenderGruposArtesanos.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem('fabricaContenido_gruposArtesanos', JSON.stringify(gruposArtesanos));
+    } catch (error) {
+      console.error("Error al guardar grupos de artesanos en localStorage:", error);
+    }
+  }, [gruposArtesanos]);
+
 
   useEffect(() => { localStorage.setItem('fabricaContenido_apiKey', apiKey); }, [apiKey]);
   useEffect(() => { localStorage.setItem('fabricaContenido_modoOscuro', JSON.stringify(modoOscuro)); }, [modoOscuro]);
@@ -370,6 +402,7 @@ function App() {
         libros,
         artesanos,
         colecciones,
+        gruposArtesanos,
       };
       const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
       saveAs(blob, `biblioteca_fabrica_contenido_${new Date().toISOString().split('T')[0]}.json`);
@@ -391,6 +424,7 @@ function App() {
           setLibros(datos.libros || []);
           setArtesanos(datos.artesanos || []);
           setColecciones(datos.colecciones || []);
+          setGruposArtesanos(datos.gruposArtesanos || []);
           mostrarNotificacion("Biblioteca importada con éxito.");
         } else {
           mostrarNotificacion("Archivo de importación no válido.");
@@ -465,6 +499,48 @@ function App() {
       cerrarModalConfirmacion();
     };
     abrirModalConfirmacion("Confirmar Eliminación", "¿Estás seguro de que quieres eliminar este artesano?", onConfirm);
+  };
+
+  // --- Lógica de "Grupos de Artesanos" ---
+  const abrirModalGrupoArtesano = (grupo = null) => {
+    if (grupo) {
+      setGrupoArtesanoEditando(grupo);
+    } else {
+      setGrupoArtesanoEditando({ nombre: '', artesanoIds: [] });
+    }
+    setModalGrupoArtesanoOpen(true);
+  };
+
+  const cerrarModalGrupoArtesano = () => {
+    setModalGrupoArtesanoOpen(false);
+    setGrupoArtesanoEditando(null);
+  };
+
+  const handleGuardarGrupoArtesano = () => {
+    if (!grupoArtesanoEditando || !grupoArtesanoEditando.nombre.trim()) {
+      mostrarNotificacion("El nombre del grupo es obligatorio.");
+      return;
+    }
+
+    if (grupoArtesanoEditando.id) {
+      // Editar grupo existente
+      setGruposArtesanos(gruposArtesanos.map(g => g.id === grupoArtesanoEditando.id ? grupoArtesanoEditando : g));
+      mostrarNotificacion("Grupo actualizado.");
+    } else {
+      // Crear nuevo grupo
+      setGruposArtesanos([...gruposArtesanos, { ...grupoArtesanoEditando, id: Date.now() }]);
+      mostrarNotificacion("Grupo creado.");
+    }
+    cerrarModalGrupoArtesano();
+  };
+
+  const handleEliminarGrupoArtesano = (idGrupo) => {
+    const onConfirm = () => {
+      setGruposArtesanos(gruposArtesanos.filter(g => g.id !== idGrupo));
+      mostrarNotificacion("Grupo eliminado.");
+      cerrarModalConfirmacion();
+    };
+    abrirModalConfirmacion("Confirmar Eliminación", "¿Estás seguro de que quieres eliminar este grupo?", onConfirm);
   };
 
 
@@ -725,6 +801,54 @@ function App() {
     );
   };
 
+  const renderModalGrupoArtesano = () => {
+    if (!modalGrupoArtesanoOpen) return null;
+  
+    const handleArtesanoSelection = (artesanoId) => {
+      setGrupoArtesanoEditando(prev => {
+        const newArtesanoIds = prev.artesanoIds.includes(artesanoId)
+          ? prev.artesanoIds.filter(id => id !== artesanoId)
+          : [...prev.artesanoIds, artesanoId];
+        return { ...prev, artesanoIds: newArtesanoIds };
+      });
+    };
+  
+    return (
+      <Modal isOpen={modalGrupoArtesanoOpen} onClose={cerrarModalGrupoArtesano} title={grupoArtesanoEditando?.id ? "Editar Grupo" : "Crear Grupo"}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre del Grupo</label>
+            <Input
+              type="text"
+              value={grupoArtesanoEditando?.nombre || ''}
+              onChange={(e) => setGrupoArtesanoEditando({ ...grupoArtesanoEditando, nombre: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Artesanos</label>
+            <div className="max-h-60 overflow-y-auto border dark:border-gray-600 rounded-md p-2 mt-1 space-y-2">
+              {artesanos.filter(a => a.id !== 'multicultural').map(artesano => (
+                <label key={artesano.id} className="flex items-center gap-2 p-2 rounded-md bg-gray-100 dark:bg-gray-700/50">
+                  <input
+                    type="checkbox"
+                    checked={grupoArtesanoEditando?.artesanoIds.includes(artesano.id)}
+                    onChange={() => handleArtesanoSelection(artesano.id)}
+                  />
+                  <span className="text-sm font-medium">{artesano.nombre}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-4 mt-6">
+          <Boton variant="secundario" onClick={cerrarModalGrupoArtesano}>Cancelar</Boton>
+          <Boton onClick={handleGuardarGrupoArtesano}>Guardar</Boton>
+        </div>
+      </Modal>
+    );
+  };
+  
+
   const renderSidebar = () => (
     <aside className={`relative bg-gray-50 dark:bg-gray-800 h-full flex-shrink-0 flex flex-col border-r dark:border-gray-700 transition-all duration-300 z-40 ${sidebarColapsada ? 'w-20' : 'w-64'}`}>
       <div className={`p-4 flex items-center border-b dark:border-gray-700 ${sidebarColapsada ? 'justify-center' : 'justify-between'}`}>
@@ -877,7 +1001,7 @@ function App() {
   const renderVistaArtesanos = () => (
     <div>
       <h2 className="text-2xl font-bold mb-6">Artesanos de Contenido</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <Card>
           <h3 className="text-lg font-bold mb-4">{artesanoEditando ? 'Editar Artesano' : 'Crear Nuevo Artesano'}</h3>
           <form onSubmit={handleGuardarArtesano} className="space-y-4">
@@ -911,6 +1035,40 @@ function App() {
           ))}
         </div>
       </div>
+
+      <hr className="my-8 dark:border-gray-700" />
+
+      <div>
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Grupos de Artesanos</h2>
+            <Boton onClick={() => abrirModalGrupoArtesano()}> 
+              <PlusIcon className="h-5 w-5" /> Crear Nuevo Grupo
+            </Boton>
+        </div>
+        <div className="space-y-4">
+            {gruposArtesanos.map(grupo => (
+              <Card key={grupo.id}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-bold">{grupo.nombre}</h3>
+                  <div className="flex gap-2">
+                    <Boton variant="secundario" onClick={() => abrirModalGrupoArtesano(grupo)}>Editar</Boton>
+                    <Boton variant="peligro" onClick={() => handleEliminarGrupoArtesano(grupo.id)}><TrashIcon className="h-5 w-5" /></Boton>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {grupo.artesanoIds.map(id => {
+                    const artesano = artesanos.find(a => a.id === id);
+                    return (
+                      <span key={id} className="bg-gray-200 dark:bg-gray-700 text-sm font-medium px-2 py-1 rounded-full">
+                        {artesano ? artesano.nombre : 'Artesano no encontrado'}
+                      </span>
+                    );
+                  })}
+                </div>
+              </Card>
+            ))}
+        </div>
+      </div>
     </div>
   );
 
@@ -935,6 +1093,26 @@ function App() {
         setIdiomasSeleccionados(prev => 
           prev.includes(idioma) ? prev.filter(i => i !== idioma) : [...prev, idioma]
         );
+      };
+      
+    const handleGrupoArtesanoChange = (e) => {
+        const grupoId = e.target.value;
+        if (grupoId === 'ninguno') {
+          setArtesanosSeleccionados({});
+          return;
+        }
+        const grupo = gruposArtesanos.find(g => g.id.toString() === grupoId);
+        if (grupo) {
+          const seleccionados = {};
+          artesanos.forEach(a => {
+            if (grupo.artesanoIds.includes(a.id)) {
+              seleccionados[a.id] = true;
+            } else {
+                seleccionados[a.id] = false;
+            }
+          });
+          setArtesanosSeleccionados(seleccionados);
+        }
       };
 
     return (
@@ -983,6 +1161,13 @@ function App() {
                       <input type="checkbox" onChange={toggleTodosArtesanos} />
                       Seleccionar Todos
                     </label>
+                  </div>
+                  <div className="mb-4">
+                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Seleccionar Grupo</label>
+                    <select onChange={handleGrupoArtesanoChange} className="w-full mt-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 text-sm">
+                        <option value="ninguno">Ningún grupo</option>
+                        {gruposArtesanos.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}
+                    </select>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {artesanos.map(a => (
@@ -1248,6 +1433,7 @@ function App() {
       </Modal>
 
       {renderModalEditarLibro()}
+      {renderModalGrupoArtesano()}
       
       {renderSidebar()}
       
