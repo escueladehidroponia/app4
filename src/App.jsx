@@ -115,6 +115,7 @@ function App() {
 
   // Estado para "Biblioteca"
   const [filtroArtesano, setFiltroArtesano] = useState('todos');
+  const [grupoArtesanoSeleccionado, setGrupoArtesanoSeleccionado] = useState('todos');
   const [capituloBibliotecaSeleccionado, setCapituloBibliotecaSeleccionado] = useState('todos');
   const [filtroColeccionBiblioteca, setFiltroColeccionBiblioteca] = useState('todas');
 
@@ -1307,14 +1308,18 @@ function App() {
       );
     }
 
+    const grupoSeleccionado = gruposArtesanos.find(g => g.id.toString() === grupoArtesanoSeleccionado);
+    const artesanosDelGrupo = grupoSeleccionado ? grupoSeleccionado.artesanoIds : [];
+
     const contenidoFiltrado = libroSeleccionado.capitulos
     .filter(cap => capituloBibliotecaSeleccionado === 'todos' || cap.id === parseFloat(capituloBibliotecaSeleccionado))
     .map(cap => {
         const contenidos = cap.contenido.filter(cont =>
-            filtroArtesano === 'todos' || String(cont.artesanoId) === filtroArtesano
+            (filtroArtesano === 'todos' || String(cont.artesanoId) === filtroArtesano) &&
+            (grupoArtesanoSeleccionado === 'todos' || artesanosDelGrupo.includes(String(cont.artesanoId)))
         );
         const traduccionesFiltradas = cap.traducciones ? cap.traducciones.filter(trad =>
-            filtroArtesano === 'todos' || filtroArtesano === 'multicultural'
+            (grupoArtesanoSeleccionado === 'todos' && (filtroArtesano === 'todos' || filtroArtesano === 'multicultural'))
         ) : [];
         return { ...cap, contenidos, traducciones: traduccionesFiltradas };
     }).filter(cap => cap.contenidos.length > 0 || cap.traducciones.length > 0);
@@ -1335,6 +1340,10 @@ function App() {
                 <option value="todos">Todos los Artesanos</option>
                 <option value="base">Texto Base</option>
                 {artesanos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+              <select value={grupoArtesanoSeleccionado} onChange={e => setGrupoArtesanoSeleccionado(e.target.value)} className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md py-2 px-3">
+                <option value="todos">Todos los Grupos</option>
+                {gruposArtesanos.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}
               </select>
             </div>
           </div>
