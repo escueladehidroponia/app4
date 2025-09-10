@@ -23,6 +23,7 @@ import {
   ArrowLeftOnRectangleIcon,
   ArrowRightOnRectangleIcon,
   PlayIcon,
+  PlayCircleIcon,
 } from '@heroicons/react/24/outline'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
@@ -53,12 +54,12 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl m-4">
-        <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl m-4 flex flex-col" style={{maxHeight: '90vh'}}>
+        <div className="flex justify-between items-center p-4 border-b dark:border-gray-700 flex-shrink-0">
           <h3 className="text-lg font-semibold">{title}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><XMarkIcon className="h-5 w-5" /></button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-4 overflow-y-auto">{children}</div>
       </div>
     </div>
   );
@@ -121,6 +122,8 @@ function App() {
   const [filtroColeccionBiblioteca, setFiltroColeccionBiblioteca] = useState('todas');
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
+  const [audioModalOpen, setAudioModalOpen] = useState(false);
+  const [audioUrl, setAudioUrl] = useState('');
 
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
@@ -361,7 +364,8 @@ function App() {
       completado: false,
       contenido: [],
       traducciones: [],
-      videoUrls: []
+      videoUrls: [],
+      audioUrls: []
     }));
 
     const nuevo = {
@@ -778,7 +782,7 @@ function App() {
     setVideoModalOpen(false);
   };
 
-  const renderVideoPlayerModal = () => {
+    const renderVideoPlayerModal = () => {
     if (!videoModalOpen) return null;
 
     let embedUrl = '';
@@ -809,6 +813,30 @@ function App() {
     );
   };
 
+  const abrirAudioModal = (url) => {
+    setAudioUrl(url);
+    setAudioModalOpen(true);
+  };
+
+  const cerrarAudioModal = () => {
+    setAudioUrl('');
+    setAudioModalOpen(false);
+  };
+
+  const renderAudioPlayerModal = () => {
+    if (!audioModalOpen) return null;
+
+    return (
+      <Modal isOpen={audioModalOpen} onClose={cerrarAudioModal} title="Reproductor de Audio">
+        <div className="p-4">
+          <audio controls autoPlay src={audioUrl} className="w-full">
+            Tu navegador no soporta el elemento de audio.
+          </audio>
+        </div>
+      </Modal>
+    );
+  };
+
   const renderModalEditarLibro = () => {
     if (!libroEditando) return null;
 
@@ -827,7 +855,7 @@ function App() {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Capítulos</label>
             <div className="space-y-2">
               {libroEditando.capitulos.map((capitulo, index) => (
-                <div key={capitulo.id} className="flex items-center gap-2">
+                <div key={capitulo.id} className="grid grid-cols-2 gap-4 items-start">
                   <Input
                     type="text"
                     value={capitulo.titulo}
@@ -836,9 +864,10 @@ function App() {
                       nuevosCapitulos[index].titulo = e.target.value;
                       setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                     }}
-                    className="flex-grow"
+                    className="col-span-2"
                   />
-                  <div className="w-1/3 space-y-2">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Video URLs</h4>
                     {capitulo.videoUrls && capitulo.videoUrls.map((url, urlIndex) => (
                       <div key={urlIndex} className="flex items-center gap-2">
                         <Input
@@ -871,6 +900,46 @@ function App() {
                           nuevosCapitulos[index].videoUrls = [];
                         }
                         nuevosCapitulos[index].videoUrls.push('');
+                        setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4" /> Añadir URL
+                    </Boton>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Audio URLs</h4>
+                    {capitulo.audioUrls && capitulo.audioUrls.map((url, urlIndex) => (
+                      <div key={urlIndex} className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          placeholder="URL del audio"
+                          value={url}
+                          onChange={(e) => {
+                            const nuevosCapitulos = [...libroEditando.capitulos];
+                            nuevosCapitulos[index].audioUrls[urlIndex] = e.target.value;
+                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                          }}
+                        />
+                        <Boton
+                          variant="peligro"
+                          onClick={() => {
+                            const nuevosCapitulos = [...libroEditando.capitulos];
+                            nuevosCapitulos[index].audioUrls.splice(urlIndex, 1);
+                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                          }}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Boton>
+                      </div>
+                    ))}
+                    <Boton
+                      variant="secundario"
+                      onClick={() => {
+                        const nuevosCapitulos = [...libroEditando.capitulos];
+                        if (!nuevosCapitulos[index].audioUrls) {
+                          nuevosCapitulos[index].audioUrls = [];
+                        }
+                        nuevosCapitulos[index].audioUrls.push('');
                         setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                       }}
                     >
@@ -1410,7 +1479,7 @@ function App() {
             (grupoArtesanoSeleccionado === 'todos' && (filtroArtesano === 'todos' || filtroArtesano === 'multicultural'))
         ) : [];
         return { ...cap, contenidos, traducciones: traduccionesFiltradas };
-    }).filter(cap => cap.contenidos.length > 0 || cap.traducciones.length > 0);
+    }).filter(cap => cap.contenidos.length > 0 || cap.traducciones.length > 0 || (cap.audioUrls && cap.audioUrls.length > 0));
 
     return (
       <div>
@@ -1446,6 +1515,11 @@ function App() {
                   {cap.videoUrls && cap.videoUrls.map((url, index) => (
                     <Boton key={index} onClick={() => abrirVideoModal(url)} variant="secundario">
                       <PlayIcon className="h-5 w-5" /> Ver Video {index + 1}
+                    </Boton>
+                  ))}
+                  {cap.audioUrls && cap.audioUrls.map((url, index) => (
+                    <Boton key={index} onClick={() => abrirAudioModal(url)} variant="secundario">
+                      <PlayCircleIcon className="h-5 w-5" /> Escuchar Audio {index + 1}
                     </Boton>
                   ))}
                   <Boton onClick={() => handleDescargarCapituloZip(cap)} variant="secundario">
@@ -1539,6 +1613,7 @@ function App() {
       {renderModalEditarLibro()}
       {renderModalGrupoArtesano()}
       {renderVideoPlayerModal()}
+      {renderAudioPlayerModal()}
       
       {renderSidebar()}
       
