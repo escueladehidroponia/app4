@@ -1025,7 +1025,7 @@ function App() {
         </Card>
         <div className="space-y-4">
           <h3 className="text-lg font-bold mb-4">Lista de Artesanos</h3>
-          {artesanos.map(artesano => (
+          {artesanos.filter(a => a.id !== 'multicultural').map(artesano => (
             <Card key={artesano.id} className="flex justify-between items-center">
               <p className="font-medium">{artesano.nombre}</p>
               <div className="flex gap-2">
@@ -1309,7 +1309,7 @@ function App() {
     }
 
     const grupoSeleccionado = gruposArtesanos.find(g => g.id.toString() === grupoArtesanoSeleccionado);
-    const artesanosDelGrupo = grupoSeleccionado ? grupoSeleccionado.artesanoIds : [];
+    const artesanosDelGrupo = grupoSeleccionado ? grupoSeleccionado.artesanoIds.map(id => String(id)) : [];
 
     const contenidoFiltrado = libroSeleccionado.capitulos
     .filter(cap => capituloBibliotecaSeleccionado === 'todos' || cap.id === parseFloat(capituloBibliotecaSeleccionado))
@@ -1454,7 +1454,7 @@ function App() {
         {vistaActual === 'Colecciones' && renderVistaColecciones()}
         {vistaActual === 'Área de Creación' && renderVistaAreaDeCreacion()}
         {vistaActual === 'Biblioteca' && renderVistaBiblioteca()}
-        {vistaActual === 'Artesanos' && renderVistaArtesanos()}
+                {vistaActual === 'Artesanos' && renderVistaArtesanos()}
       </main>
     </div>
   );
