@@ -22,6 +22,7 @@ import {
   FolderIcon,
   ArrowLeftOnRectangleIcon,
   ArrowRightOnRectangleIcon,
+  PlayIcon,
 } from '@heroicons/react/24/outline'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
@@ -52,7 +53,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md m-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl m-4">
         <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
           <h3 className="text-lg font-semibold">{title}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"><XMarkIcon className="h-5 w-5" /></button>
@@ -118,6 +119,8 @@ function App() {
   const [grupoArtesanoSeleccionado, setGrupoArtesanoSeleccionado] = useState('todos');
   const [capituloBibliotecaSeleccionado, setCapituloBibliotecaSeleccionado] = useState('todos');
   const [filtroColeccionBiblioteca, setFiltroColeccionBiblioteca] = useState('todas');
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
 
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
@@ -357,7 +360,8 @@ function App() {
       titulo: titulo.trim(),
       completado: false,
       contenido: [],
-      traducciones: []
+      traducciones: [],
+      videoUrls: []
     }));
 
     const nuevo = {
@@ -764,6 +768,47 @@ function App() {
     </div>
   );
 
+  const abrirVideoModal = (url) => {
+    setVideoUrl(url);
+    setVideoModalOpen(true);
+  };
+
+  const cerrarVideoModal = () => {
+    setVideoUrl('');
+    setVideoModalOpen(false);
+  };
+
+  const renderVideoPlayerModal = () => {
+    if (!videoModalOpen) return null;
+
+    let embedUrl = '';
+    if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+      const videoId = videoUrl.split('v=')[1] || videoUrl.split('/').pop();
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+    } else if (videoUrl.includes('vimeo.com')) {
+      const videoId = videoUrl.split('/').pop();
+      embedUrl = `https://player.vimeo.com/video/${videoId}`;
+    }
+
+    return (
+      <Modal isOpen={videoModalOpen} onClose={cerrarVideoModal} title="Visor de Video">
+        <div className="aspect-w-16 aspect-h-9">
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+            ></iframe>
+          ) : (
+            <p>URL de video no válida. Por favor, introduce una URL de YouTube o Vimeo.</p>
+          )}
+        </div>
+      </Modal>
+    );
+  };
+
   const renderModalEditarLibro = () => {
     if (!libroEditando) return null;
 
@@ -779,19 +824,62 @@ function App() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Capítulos (uno por línea)</label>
-            <Textarea
-              rows="10"
-              value={libroEditando.capitulos.map(c => c.titulo).join('\n')}
-              onChange={(e) => {
-                const titulos = e.target.value.split('\n');
-                const nuevosCapitulos = titulos.map((titulo, index) => {
-                  const capituloExistente = libroEditando.capitulos[index];
-                  return capituloExistente ? { ...capituloExistente, titulo: titulo.trim() } : { id: Date.now() + Math.random(), titulo: titulo.trim(), completado: false, contenido: [] };
-                });
-                setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
-              }}
-            />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Capítulos</label>
+            <div className="space-y-2">
+              {libroEditando.capitulos.map((capitulo, index) => (
+                <div key={capitulo.id} className="flex items-center gap-2">
+                  <Input
+                    type="text"
+                    value={capitulo.titulo}
+                    onChange={(e) => {
+                      const nuevosCapitulos = [...libroEditando.capitulos];
+                      nuevosCapitulos[index].titulo = e.target.value;
+                      setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                    }}
+                    className="flex-grow"
+                  />
+                  <div className="w-1/3 space-y-2">
+                    {capitulo.videoUrls && capitulo.videoUrls.map((url, urlIndex) => (
+                      <div key={urlIndex} className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          placeholder="URL del video"
+                          value={url}
+                          onChange={(e) => {
+                            const nuevosCapitulos = [...libroEditando.capitulos];
+                            nuevosCapitulos[index].videoUrls[urlIndex] = e.target.value;
+                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                          }}
+                        />
+                        <Boton
+                          variant="peligro"
+                          onClick={() => {
+                            const nuevosCapitulos = [...libroEditando.capitulos];
+                            nuevosCapitulos[index].videoUrls.splice(urlIndex, 1);
+                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                          }}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Boton>
+                      </div>
+                    ))}
+                    <Boton
+                      variant="secundario"
+                      onClick={() => {
+                        const nuevosCapitulos = [...libroEditando.capitulos];
+                        if (!nuevosCapitulos[index].videoUrls) {
+                          nuevosCapitulos[index].videoUrls = [];
+                        }
+                        nuevosCapitulos[index].videoUrls.push('');
+                        setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4" /> Añadir URL
+                    </Boton>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex justify-end gap-4 mt-6">
@@ -1354,9 +1442,16 @@ function App() {
             <div key={cap.id}>
               <div className="flex justify-between items-center border-b-2 border-blue-500 pb-2 mb-4">
                 <h3 className="text-xl font-semibold">{cap.titulo}</h3>
-                <Boton onClick={() => handleDescargarCapituloZip(cap)} variant="secundario">
-                  <ArchiveBoxIcon className="h-5 w-5" /> Descargar Capítulo
-                </Boton>
+                <div className="flex gap-2">
+                  {cap.videoUrls && cap.videoUrls.map((url, index) => (
+                    <Boton key={index} onClick={() => abrirVideoModal(url)} variant="secundario">
+                      <PlayIcon className="h-5 w-5" /> Ver Video {index + 1}
+                    </Boton>
+                  ))}
+                  <Boton onClick={() => handleDescargarCapituloZip(cap)} variant="secundario">
+                    <ArchiveBoxIcon className="h-5 w-5" /> Descargar Capítulo
+                  </Boton>
+                </div>
               </div>
               <div className="space-y-4">
                 {cap.contenidos.map((cont, index) => (
@@ -1443,6 +1538,7 @@ function App() {
 
       {renderModalEditarLibro()}
       {renderModalGrupoArtesano()}
+      {renderVideoPlayerModal()}
       
       {renderSidebar()}
       
@@ -1454,7 +1550,7 @@ function App() {
         {vistaActual === 'Colecciones' && renderVistaColecciones()}
         {vistaActual === 'Área de Creación' && renderVistaAreaDeCreacion()}
         {vistaActual === 'Biblioteca' && renderVistaBiblioteca()}
-                {vistaActual === 'Artesanos' && renderVistaArtesanos()}
+        {vistaActual === 'Artesanos' && renderVistaArtesanos()}
       </main>
     </div>
   );
