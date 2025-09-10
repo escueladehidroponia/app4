@@ -825,6 +825,7 @@ function App() {
 
   const renderAudioPlayerModal = () => {
     if (!audioModalOpen) return null;
+    console.log('Audio URL:', audioUrl);
 
     return (
       <Modal isOpen={audioModalOpen} onClose={cerrarAudioModal} title="Reproductor de Audio">
