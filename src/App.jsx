@@ -24,7 +24,9 @@ import {
   ArrowRightOnRectangleIcon,
   PlayIcon,
   PlayCircleIcon,
-} from '@heroicons/react/24/outline'; // Using outline icons
+  DocumentTextIcon,
+} from '@heroicons/react/24/outline';
+import PdfViewer from './components/PdfViewer'; // Using outline icons
 
 // --- COMPONENTES DE UI REUTILIZABLES ---
 
@@ -124,6 +126,8 @@ function App() {
   const [videoUrl, setVideoUrl] = useState('');
   const [audioModalOpen, setAudioModalOpen] = useState(false);
   const [audioUrl, setAudioUrl] = useState('');
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState('');
 
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
@@ -365,7 +369,8 @@ function App() {
       contenido: [],
       traducciones: [],
       videoUrls: [],
-      audioUrls: []
+      audioUrls: [],
+      pdfUrls: []
     }));
 
     const nuevo = {
@@ -838,6 +843,25 @@ function App() {
     );
   };
 
+  const abrirPdfModal = (url) => {
+    setPdfUrl(url);
+    setPdfModalOpen(true);
+  };
+
+  const cerrarPdfModal = () => {
+    setPdfUrl('');
+    setPdfModalOpen(false);
+  };
+
+  const renderPdfViewerModal = () => {
+    if (!pdfModalOpen) return null;
+    return (
+      <Modal isOpen={pdfModalOpen} onClose={cerrarPdfModal} title="Visor de PDF">
+        <PdfViewer initialFile={pdfUrl} showPicker={false} />
+      </Modal>
+    );
+  };
+
   const renderModalEditarLibro = () => {
     if (!libroEditando) return null;
 
@@ -947,6 +971,46 @@ function App() {
                       <PlusIcon className="h-4 w-4" /> Añadir URL
                     </Boton>
                   </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">PDF URLs</h4>
+                    {capitulo.pdfUrls && capitulo.pdfUrls.map((url, urlIndex) => (
+                      <div key={urlIndex} className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          placeholder="URL del PDF"
+                          value={url}
+                          onChange={(e) => {
+                            const nuevosCapitulos = [...libroEditando.capitulos];
+                            nuevosCapitulos[index].pdfUrls[urlIndex] = e.target.value;
+                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                          }}
+                        />
+                        <Boton
+                          variant="peligro"
+                          onClick={() => {
+                            const nuevosCapitulos = [...libroEditando.capitulos];
+                            nuevosCapitulos[index].pdfUrls.splice(urlIndex, 1);
+                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                          }}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </Boton>
+                      </div>
+                    ))}
+                    <Boton
+                      variant="secundario"
+                      onClick={() => {
+                        const nuevosCapitulos = [...libroEditando.capitulos];
+                        if (!nuevosCapitulos[index].pdfUrls) {
+                          nuevosCapitulos[index].pdfUrls = [];
+                        }
+                        nuevosCapitulos[index].pdfUrls.push('');
+                        setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                      }}
+                    >
+                      <PlusIcon className="h-4 w-4" /> Añadir URL
+                    </Boton>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1018,7 +1082,7 @@ function App() {
         <button className="md:hidden" onClick={() => setSidebarAbierta(false)}><XMarkIcon className="h-5 w-5" /></button>
       </div>
       <nav className="flex-grow p-4 space-y-2">
-        {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Colecciones', icon: <FolderIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <CodeBracketIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}].map(item => (
+                {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Colecciones', icon: <FolderIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <CodeBracketIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}, {id: 'Visor PDF', icon: <DocumentTextIcon className="h-5 w-5" />}].map(item => (
           <button key={item.id} onClick={() => { setVistaActual(item.id); setSidebarAbierta(false); }}
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-left font-medium ${sidebarColapsada ? 'justify-center' : ''} ${vistaActual === item.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
             {item.icon}
@@ -1154,6 +1218,15 @@ function App() {
           ))}
         </div>
       </div>
+    </div>
+  );
+
+  const renderVistaVisorPdf = () => (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Visor de PDF</h2>
+      <Card>
+        <PdfViewer />
+      </Card>
     </div>
   );
 
@@ -1523,6 +1596,11 @@ function App() {
                       <PlayCircleIcon className="h-5 w-5" /> Escuchar Audio {index + 1}
                     </Boton>
                   ))}
+                  {cap.pdfUrls && cap.pdfUrls.map((url, index) => (
+                    <Boton key={index} onClick={() => abrirPdfModal(url)} variant="secundario">
+                      <DocumentTextIcon className="h-5 w-5" /> Ver PDF {index + 1}
+                    </Boton>
+                  ))}
                   <Boton onClick={() => handleDescargarCapituloZip(cap)} variant="secundario">
                     <ArchiveBoxIcon className="h-5 w-5" /> Descargar Capítulo
                   </Boton>
@@ -1615,6 +1693,7 @@ function App() {
       {renderModalGrupoArtesano()}
       {renderVideoPlayerModal()}
       {renderAudioPlayerModal()}
+      {renderPdfViewerModal()}
       
       {renderSidebar()}
       
@@ -1627,6 +1706,7 @@ function App() {
         {vistaActual === 'Área de Creación' && renderVistaAreaDeCreacion()}
         {vistaActual === 'Biblioteca' && renderVistaBiblioteca()}
         {vistaActual === 'Artesanos' && renderVistaArtesanos()}
+        {vistaActual === 'Visor PDF' && renderVistaVisorPdf()}
       </main>
     </div>
   );
