@@ -124,10 +124,13 @@ function App() {
   const [filtroColeccionBiblioteca, setFiltroColeccionBiblioteca] = useState('todas');
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoModalTitle, setVideoModalTitle] = useState('');
   const [audioModalOpen, setAudioModalOpen] = useState(false);
   const [audioUrl, setAudioUrl] = useState('');
+  const [audioModalTitle, setAudioModalTitle] = useState('');
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState('');
+  const [pdfModalTitle, setPdfModalTitle] = useState('');
 
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
@@ -368,9 +371,9 @@ function App() {
       completado: false,
       contenido: [],
       traducciones: [],
-      videoUrls: [],
-      audioUrls: [],
-      pdfUrls: []
+      videoItems: [],
+      audioItems: [],
+      pdfItems: []
     }));
 
     const nuevo = {
@@ -777,13 +780,15 @@ function App() {
     </div>
   );
 
-  const abrirVideoModal = (url) => {
-    setVideoUrl(url);
+  const abrirVideoModal = (item) => {
+    setVideoUrl(item.url);
+    setVideoModalTitle(item.name || 'Visor de Video');
     setVideoModalOpen(true);
   };
 
   const cerrarVideoModal = () => {
     setVideoUrl('');
+    setVideoModalTitle('');
     setVideoModalOpen(false);
   };
 
@@ -800,7 +805,7 @@ function App() {
     }
 
     return (
-      <Modal isOpen={videoModalOpen} onClose={cerrarVideoModal} title="Visor de Video">
+      <Modal isOpen={videoModalOpen} onClose={cerrarVideoModal} title={videoModalTitle}>
         <div className="aspect-w-16 aspect-h-9">
           {embedUrl ? (
             <iframe
@@ -818,13 +823,15 @@ function App() {
     );
   };
 
-  const abrirAudioModal = (url) => {
-    setAudioUrl(url);
+  const abrirAudioModal = (item) => {
+    setAudioUrl(item.url);
+    setAudioModalTitle(item.name || 'Reproductor de Audio');
     setAudioModalOpen(true);
   };
 
   const cerrarAudioModal = () => {
     setAudioUrl('');
+    setAudioModalTitle('');
     setAudioModalOpen(false);
   };
 
@@ -833,7 +840,7 @@ function App() {
     console.log('Audio URL:', audioUrl);
 
     return (
-      <Modal isOpen={audioModalOpen} onClose={cerrarAudioModal} title="Reproductor de Audio">
+      <Modal isOpen={audioModalOpen} onClose={cerrarAudioModal} title={audioModalTitle}>
         <div className="p-4">
           <audio controls autoPlay src={audioUrl} className="w-full">
             Tu navegador no soporta el elemento de audio.
@@ -843,20 +850,22 @@ function App() {
     );
   };
 
-  const abrirPdfModal = (url) => {
-    setPdfUrl(url);
+  const abrirPdfModal = (item) => {
+    setPdfUrl(item.url);
+    setPdfModalTitle(item.name || 'Visor de PDF');
     setPdfModalOpen(true);
   };
 
   const cerrarPdfModal = () => {
     setPdfUrl('');
+    setPdfModalTitle('');
     setPdfModalOpen(false);
   };
 
   const renderPdfViewerModal = () => {
     if (!pdfModalOpen) return null;
     return (
-      <Modal isOpen={pdfModalOpen} onClose={cerrarPdfModal} title="Visor de PDF">
+      <Modal isOpen={pdfModalOpen} onClose={cerrarPdfModal} title={pdfModalTitle}>
         <PdfViewer initialFile={pdfUrl} showPicker={false} />
       </Modal>
     );
@@ -892,123 +901,159 @@ function App() {
                     className="col-span-2"
                   />
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Video URLs</h4>
-                    {capitulo.videoUrls && capitulo.videoUrls.map((url, urlIndex) => (
-                      <div key={urlIndex} className="flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Videos</h4>
+                    {capitulo.videoItems && capitulo.videoItems.map((item, itemIndex) => (
+                      <div key={itemIndex} className="flex flex-col gap-2 p-2 border border-gray-200 dark:border-gray-700 rounded-md">
                         <Input
                           type="text"
-                          placeholder="URL del video"
-                          value={url}
+                          placeholder="Nombre del video"
+                          value={item.name}
                           onChange={(e) => {
                             const nuevosCapitulos = [...libroEditando.capitulos];
-                            nuevosCapitulos[index].videoUrls[urlIndex] = e.target.value;
+                            nuevosCapitulos[index].videoItems[itemIndex].name = e.target.value;
                             setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                           }}
                         />
-                        <Boton
-                          variant="peligro"
-                          onClick={() => {
-                            const nuevosCapitulos = [...libroEditando.capitulos];
-                            nuevosCapitulos[index].videoUrls.splice(urlIndex, 1);
-                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
-                          }}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </Boton>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="text"
+                            placeholder="URL del video"
+                            value={item.url}
+                            onChange={(e) => {
+                              const nuevosCapitulos = [...libroEditando.capitulos];
+                              nuevosCapitulos[index].videoItems[itemIndex].url = e.target.value;
+                              setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                          />
+                          <Boton
+                            variant="peligro"
+                            onClick={() => {
+                              const nuevosCapitulos = [...libroEditando.capitulos];
+                              nuevosCapitulos[index].videoItems.splice(itemIndex, 1);
+                              setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Boton>
+                        </div>
                       </div>
                     ))}
                     <Boton
                       variant="secundario"
                       onClick={() => {
                         const nuevosCapitulos = [...libroEditando.capitulos];
-                        if (!nuevosCapitulos[index].videoUrls) {
-                          nuevosCapitulos[index].videoUrls = [];
+                        if (!nuevosCapitulos[index].videoItems) {
+                          nuevosCapitulos[index].videoItems = [];
                         }
-                        nuevosCapitulos[index].videoUrls.push('');
+                        nuevosCapitulos[index].videoItems.push({ name: '', url: '' });
                         setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                       }}
                     >
-                      <PlusIcon className="h-4 w-4" /> Añadir URL
+                      <PlusIcon className="h-4 w-4" /> Añadir Video
                     </Boton>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Audio URLs</h4>
-                    {capitulo.audioUrls && capitulo.audioUrls.map((url, urlIndex) => (
-                      <div key={urlIndex} className="flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Audios</h4>
+                    {capitulo.audioItems && capitulo.audioItems.map((item, itemIndex) => (
+                      <div key={itemIndex} className="flex flex-col gap-2 p-2 border border-gray-200 dark:border-gray-700 rounded-md">
                         <Input
                           type="text"
-                          placeholder="URL del audio"
-                          value={url}
+                          placeholder="Nombre del audio"
+                          value={item.name}
                           onChange={(e) => {
                             const nuevosCapitulos = [...libroEditando.capitulos];
-                            nuevosCapitulos[index].audioUrls[urlIndex] = e.target.value;
+                            nuevosCapitulos[index].audioItems[itemIndex].name = e.target.value;
                             setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                           }}
                         />
-                        <Boton
-                          variant="peligro"
-                          onClick={() => {
-                            const nuevosCapitulos = [...libroEditando.capitulos];
-                            nuevosCapitulos[index].audioUrls.splice(urlIndex, 1);
-                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
-                          }}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </Boton>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="text"
+                            placeholder="URL del audio"
+                            value={item.url}
+                            onChange={(e) => {
+                              const nuevosCapitulos = [...libroEditando.capitulos];
+                              nuevosCapitulos[index].audioItems[itemIndex].url = e.target.value;
+                              setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                          />
+                          <Boton
+                            variant="peligro"
+                            onClick={() => {
+                              const nuevosCapitulos = [...libroEditando.capitulos];
+                              nuevosCapitulos[index].audioItems.splice(itemIndex, 1);
+                              setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Boton>
+                        </div>
                       </div>
                     ))}
                     <Boton
                       variant="secundario"
                       onClick={() => {
                         const nuevosCapitulos = [...libroEditando.capitulos];
-                        if (!nuevosCapitulos[index].audioUrls) {
-                          nuevosCapitulos[index].audioUrls = [];
+                        if (!nuevosCapitulos[index].audioItems) {
+                          nuevosCapitulos[index].audioItems = [];
                         }
-                        nuevosCapitulos[index].audioUrls.push('');
+                        nuevosCapitulos[index].audioItems.push({ name: '', url: '' });
                         setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                       }}
                     >
-                      <PlusIcon className="h-4 w-4" /> Añadir URL
+                      <PlusIcon className="h-4 w-4" /> Añadir Audio
                     </Boton>
                   </div>
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">PDF URLs</h4>
-                    {capitulo.pdfUrls && capitulo.pdfUrls.map((url, urlIndex) => (
-                      <div key={urlIndex} className="flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">PDFs</h4>
+                    {capitulo.pdfItems && capitulo.pdfItems.map((item, itemIndex) => (
+                      <div key={itemIndex} className="flex flex-col gap-2 p-2 border border-gray-200 dark:border-gray-700 rounded-md">
                         <Input
                           type="text"
-                          placeholder="URL del PDF"
-                          value={url}
+                          placeholder="Nombre del PDF"
+                          value={item.name}
                           onChange={(e) => {
                             const nuevosCapitulos = [...libroEditando.capitulos];
-                            nuevosCapitulos[index].pdfUrls[urlIndex] = e.target.value;
+                            nuevosCapitulos[index].pdfItems[itemIndex].name = e.target.value;
                             setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                           }}
                         />
-                        <Boton
-                          variant="peligro"
-                          onClick={() => {
-                            const nuevosCapitulos = [...libroEditando.capitulos];
-                            nuevosCapitulos[index].pdfUrls.splice(urlIndex, 1);
-                            setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
-                          }}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </Boton>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="text"
+                            placeholder="URL del PDF"
+                            value={item.url}
+                            onChange={(e) => {
+                              const nuevosCapitulos = [...libroEditando.capitulos];
+                              nuevosCapitulos[index].pdfItems[itemIndex].url = e.target.value;
+                              setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                          />
+                          <Boton
+                            variant="peligro"
+                            onClick={() => {
+                              const nuevosCapitulos = [...libroEditando.capitulos];
+                              nuevosCapitulos[index].pdfItems.splice(itemIndex, 1);
+                              setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Boton>
+                        </div>
                       </div>
                     ))}
                     <Boton
                       variant="secundario"
                       onClick={() => {
                         const nuevosCapitulos = [...libroEditando.capitulos];
-                        if (!nuevosCapitulos[index].pdfUrls) {
-                          nuevosCapitulos[index].pdfUrls = [];
+                        if (!nuevosCapitulos[index].pdfItems) {
+                          nuevosCapitulos[index].pdfItems = [];
                         }
-                        nuevosCapitulos[index].pdfUrls.push('');
+                        nuevosCapitulos[index].pdfItems.push({ name: '', url: '' });
                         setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                       }}
                     >
-                      <PlusIcon className="h-4 w-4" /> Añadir URL
+                      <PlusIcon className="h-4 w-4" /> Añadir PDF
                     </Boton>
                   </div>
                 </div>
@@ -1586,19 +1631,19 @@ function App() {
               <div className="flex justify-between items-center border-b-2 border-blue-500 pb-2 mb-4">
                 <h3 className="text-xl font-semibold">{cap.titulo}</h3>
                 <div className="flex gap-2">
-                  {cap.videoUrls && cap.videoUrls.map((url, index) => (
-                    <Boton key={index} onClick={() => abrirVideoModal(url)} variant="secundario">
-                      <PlayIcon className="h-5 w-5" /> Ver Video {index + 1}
+                  {cap.videoItems && cap.videoItems.map((item, index) => (
+                    <Boton key={index} onClick={() => abrirVideoModal(item)} variant="secundario">
+                      <PlayIcon className="h-5 w-5" /> {item.name || `Video ${index + 1}`}
                     </Boton>
                   ))}
-                  {cap.audioUrls && cap.audioUrls.map((url, index) => (
-                    <Boton key={index} onClick={() => abrirAudioModal(url)} variant="secundario">
-                      <PlayCircleIcon className="h-5 w-5" /> Escuchar Audio {index + 1}
+                  {cap.audioItems && cap.audioItems.map((item, index) => (
+                    <Boton key={index} onClick={() => abrirAudioModal(item)} variant="secundario">
+                      <PlayCircleIcon className="h-5 w-5" /> {item.name || `Audio ${index + 1}`}
                     </Boton>
                   ))}
-                  {cap.pdfUrls && cap.pdfUrls.map((url, index) => (
-                    <Boton key={index} onClick={() => abrirPdfModal(url)} variant="secundario">
-                      <DocumentTextIcon className="h-5 w-5" /> Ver PDF {index + 1}
+                  {cap.pdfItems && cap.pdfItems.map((item, index) => (
+                    <Boton key={index} onClick={() => abrirPdfModal(item)} variant="secundario">
+                      <DocumentTextIcon className="h-5 w-5" /> {item.name || `PDF ${index + 1}`}
                     </Boton>
                   ))}
                   <Boton onClick={() => handleDescargarCapituloZip(cap)} variant="secundario">
