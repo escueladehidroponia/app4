@@ -67,6 +67,113 @@ const Modal = ({ isOpen, onClose, title, children }) => {
   );
 };
 
+  const renderVistaGestionEtiquetas = () => {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Gestión de Etiquetas</h2>
+
+        {/* Video Tags */}
+        <Card className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Etiquetas de Video</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {mediaTags.video.map((tag, index) => (
+              <span key={index} className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 flex items-center">
+                {tag}
+                <button
+                  onClick={() => handleRemoveTag('video', tag)}
+                  className="ml-1 text-blue-800 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Nueva etiqueta de video"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                  handleAddTag('video', e.target.value.trim());
+                  e.target.value = '';
+                }
+              }}
+            />
+            <Boton onClick={() => handleAddTag('video', document.querySelector('input[placeholder="Nueva etiqueta de video"]').value.trim())}>
+              Añadir
+            </Boton>
+          </div>
+        </Card>
+
+        {/* Audio Tags */}
+        <Card className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Etiquetas de Audio</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {mediaTags.audio.map((tag, index) => (
+              <span key={index} className="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300 flex items-center">
+                {tag}
+                <button
+                  onClick={() => handleRemoveTag('audio', tag)}
+                  className="ml-1 text-green-800 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Nueva etiqueta de audio"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                  handleAddTag('audio', e.target.value.trim());
+                  e.target.value = '';
+                }
+              }}
+            />
+            <Boton onClick={() => handleAddTag('audio', document.querySelector('input[placeholder="Nueva etiqueta de audio"]').value.trim())}>
+              Añadir
+            </Boton>
+          </div>
+        </Card>
+
+        {/* PDF Tags */}
+        <Card className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Etiquetas de PDF</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {mediaTags.pdf.map((tag, index) => (
+              <span key={index} className="bg-red-100 text-red-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300 flex items-center">
+                {tag}
+                <button
+                  onClick={() => handleRemoveTag('pdf', tag)}
+                  className="ml-1 text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Nueva etiqueta de PDF"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                  handleAddTag('pdf', e.target.value.trim());
+                  e.target.value = '';
+                }
+              }}
+            />
+            <Boton onClick={() => handleAddTag('pdf', document.querySelector('input[placeholder="Nueva etiqueta de PDF"]').value.trim())}>
+              Añadir
+            </Boton>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
 
 // --- COMPONENTE PRINCIPAL DE LA APLICACIÓN ---
 
@@ -132,10 +239,18 @@ function App() {
   const [pdfUrl, setPdfUrl] = useState('');
   const [pdfModalTitle, setPdfModalTitle] = useState('');
 
+  // Estado para la gestión de etiquetas
+  const [mediaTags, setMediaTags] = useState({
+    video: [],
+    audio: [],
+    pdf: []
+  });
+
   const isFirstRenderLibros = useRef(true);
   const isFirstRenderArtesanos = useRef(true);
   const isFirstRenderColecciones = useRef(true);
   const isFirstRenderGruposArtesanos = useRef(true);
+  const isFirstRenderMediaTags = useRef(true);
 
 
   // --- EFECTOS (PERSISTENCIA Y OTROS) ---
@@ -209,6 +324,20 @@ function App() {
       setGruposArtesanos([]);
     }
 
+    // Cargar Etiquetas de Medios
+    try {
+      const mediaTagsGuardadas = localStorage.getItem('fabricaContenido_mediaTags');
+      if (mediaTagsGuardadas) {
+        setMediaTags(JSON.parse(mediaTagsGuardadas));
+      } else {
+        // Initialize with default empty arrays if nothing is found
+        setMediaTags({ video: [], audio: [], pdf: [] });
+      }
+    } catch (error) {
+      console.error("Error al cargar etiquetas de medios de localStorage:", error);
+      setMediaTags({ video: [], audio: [], pdf: [] });
+    }
+
 
     // Cargar API Key
     const apiKeyGuardada = localStorage.getItem('fabricaContenido_apiKey');
@@ -268,6 +397,18 @@ function App() {
       console.error("Error al guardar grupos de artesanos en localStorage:", error);
     }
   }, [gruposArtesanos]);
+
+  useEffect(() => {
+    if (isFirstRenderMediaTags.current) {
+      isFirstRenderMediaTags.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem('fabricaContenido_mediaTags', JSON.stringify(mediaTags));
+    } catch (error) {
+      console.error("Error al guardar etiquetas de medios en localStorage:", error);
+    }
+  }, [mediaTags]);
 
 
   useEffect(() => { localStorage.setItem('fabricaContenido_apiKey', apiKey); }, [apiKey]);
@@ -558,6 +699,22 @@ function App() {
       cerrarModalConfirmacion();
     };
     abrirModalConfirmacion("Confirmar Eliminación", "¿Estás seguro de que quieres eliminar este grupo?", onConfirm);
+  };
+
+  const handleAddTag = (type, tag) => {
+    if (tag && !mediaTags[type].includes(tag)) {
+      setMediaTags(prevTags => ({
+        ...prevTags,
+        [type]: [...prevTags[type], tag]
+      }));
+    }
+  };
+
+  const handleRemoveTag = (type, tagToRemove) => {
+    setMediaTags(prevTags => ({
+      ...prevTags,
+      [type]: prevTags[type].filter(tag => tag !== tagToRemove)
+    }));
   };
 
 
@@ -874,6 +1031,70 @@ function App() {
   const renderModalEditarLibro = () => {
     if (!libroEditando) return null;
 
+    const TagInput = ({ tags, onTagsChange, tagType }) => {
+        let spanClass = '';
+        let buttonClass = '';
+        let placeholder = 'Añadir etiqueta y presionar Enter';
+
+        switch (tagType) {
+            case 'video':
+                spanClass = 'bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 flex items-center';
+                buttonClass = 'ml-1 text-blue-800 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100';
+                break;
+            case 'audio':
+                spanClass = 'bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300 flex items-center';
+                buttonClass = 'ml-1 text-green-800 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100';
+                break;
+            case 'pdf':
+                spanClass = 'bg-red-100 text-red-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300 flex items-center';
+                buttonClass = 'ml-1 text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100';
+                break;
+            default:
+                spanClass = 'bg-gray-100 text-gray-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-gray-900 dark:text-gray-300 flex items-center';
+                buttonClass = 'ml-1 text-gray-800 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100';
+        }
+
+        const handleRemoveTag = (tagToRemove) => {
+            onTagsChange(tags.filter(tag => tag !== tagToRemove));
+        };
+
+        const handleAdd = (e) => {
+            if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                e.preventDefault();
+                const newTag = e.target.value.trim();
+                if (!tags.includes(newTag)) {
+                    onTagsChange([...tags, newTag]);
+                    handleAddTag(tagType, newTag); // Add to global list
+                }
+                e.target.value = '';
+            }
+        };
+
+        return (
+            <div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                    {(tags || []).map(tag => (
+                        <span key={tag} className={spanClass}>
+                            {tag}
+                            <button
+                                type="button"
+                                onClick={() => handleRemoveTag(tag)}
+                                className={buttonClass}
+                            >
+                                <XMarkIcon className="h-4 w-4" />
+                            </button>
+                        </span>
+                    ))}
+                </div>
+                <Input
+                    type="text"
+                    placeholder={placeholder}
+                    onKeyPress={handleAdd}
+                />
+            </div>
+        );
+    };
+
     return (
       <Modal isOpen={!!libroEditando} onClose={() => setLibroEditando(null)} title="Editar Libro">
         <div className="space-y-4">
@@ -936,6 +1157,18 @@ function App() {
                             <TrashIcon className="h-4 w-4" />
                           </Boton>
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Etiquetas</label>
+                          <TagInput
+                            tags={item.tags || []}
+                            onTagsChange={(newTags) => {
+                                const nuevosCapitulos = [...libroEditando.capitulos];
+                                nuevosCapitulos[index].videoItems[itemIndex].tags = newTags;
+                                setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                            tagType="video"
+                          />
+                        </div>
                       </div>
                     ))}
                     <Boton
@@ -945,7 +1178,7 @@ function App() {
                         if (!nuevosCapitulos[index].videoItems) {
                           nuevosCapitulos[index].videoItems = [];
                         }
-                        nuevosCapitulos[index].videoItems.push({ name: '', url: '' });
+                        nuevosCapitulos[index].videoItems.push({ name: '', url: '', tags: [] });
                         setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                       }}
                     >
@@ -988,6 +1221,18 @@ function App() {
                             <TrashIcon className="h-4 w-4" />
                           </Boton>
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Etiquetas</label>
+                          <TagInput
+                            tags={item.tags || []}
+                            onTagsChange={(newTags) => {
+                                const nuevosCapitulos = [...libroEditando.capitulos];
+                                nuevosCapitulos[index].audioItems[itemIndex].tags = newTags;
+                                setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                            tagType="audio"
+                          />
+                        </div>
                       </div>
                     ))}
                     <Boton
@@ -997,7 +1242,7 @@ function App() {
                         if (!nuevosCapitulos[index].audioItems) {
                           nuevosCapitulos[index].audioItems = [];
                         }
-                        nuevosCapitulos[index].audioItems.push({ name: '', url: '' });
+                        nuevosCapitulos[index].audioItems.push({ name: '', url: '', tags: [] });
                         setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                       }}
                     >
@@ -1040,6 +1285,18 @@ function App() {
                             <TrashIcon className="h-4 w-4" />
                           </Boton>
                         </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Etiquetas</label>
+                          <TagInput
+                            tags={item.tags || []}
+                            onTagsChange={(newTags) => {
+                                const nuevosCapitulos = [...libroEditando.capitulos];
+                                nuevosCapitulos[index].pdfItems[itemIndex].tags = newTags;
+                                setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
+                            }}
+                            tagType="pdf"
+                          />
+                        </div>
                       </div>
                     ))}
                     <Boton
@@ -1049,7 +1306,7 @@ function App() {
                         if (!nuevosCapitulos[index].pdfItems) {
                           nuevosCapitulos[index].pdfItems = [];
                         }
-                        nuevosCapitulos[index].pdfItems.push({ name: '', url: '' });
+                        nuevosCapitulos[index].pdfItems.push({ name: '', url: '', tags: [] });
                         setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                       }}
                     >
@@ -1127,7 +1384,7 @@ function App() {
         <button className="md:hidden" onClick={() => setSidebarAbierta(false)}><XMarkIcon className="h-5 w-5" /></button>
       </div>
       <nav className="flex-grow p-4 space-y-2">
-                {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Colecciones', icon: <FolderIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <CodeBracketIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}, {id: 'Visor PDF', icon: <DocumentTextIcon className="h-5 w-5" />}].map(item => (
+                {[{id: 'Mis Libros', icon: <BookOpenIcon className="h-5 w-5" />}, {id: 'Colecciones', icon: <FolderIcon className="h-5 w-5" />}, {id: 'Área de Creación', icon: <CodeBracketIcon className="h-5 w-5" />}, {id: 'Biblioteca', icon: <BuildingLibraryIcon className="h-5 w-5" />}, {id: 'Artesanos', icon: <UsersIcon className="h-5 w-5" />}, {id: 'Visor PDF', icon: <DocumentTextIcon className="h-5 w-5" />}, {id: 'Gestión de Etiquetas', icon: <Cog6ToothIcon className="h-5 w-5" />}].map(item => (
           <button key={item.id} onClick={() => { setVistaActual(item.id); setSidebarAbierta(false); }}
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-md text-left font-medium ${sidebarColapsada ? 'justify-center' : ''} ${vistaActual === item.id ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
             {item.icon}
@@ -1598,7 +1855,7 @@ function App() {
             (grupoArtesanoSeleccionado === 'todos' && (filtroArtesano === 'todos' || filtroArtesano === 'multicultural'))
         ) : [];
         return { ...cap, contenidos, traducciones: traduccionesFiltradas };
-    }).filter(cap => cap.contenidos.length > 0 || cap.traducciones.length > 0 || (cap.audioUrls && cap.audioUrls.length > 0));
+    }).filter(cap => cap.contenidos.length > 0 || cap.traducciones.length > 0 || (cap.audioItems && cap.audioItems.length > 0) || (cap.videoItems && cap.videoItems.length > 0) || (cap.pdfItems && cap.pdfItems.length > 0));
 
     return (
       <div>
@@ -1630,20 +1887,29 @@ function App() {
             <div key={cap.id}>
               <div className="flex justify-between items-center border-b-2 border-blue-500 pb-2 mb-4">
                 <h3 className="text-xl font-semibold">{cap.titulo}</h3>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {cap.videoItems && cap.videoItems.map((item, index) => (
-                    <Boton key={index} onClick={() => abrirVideoModal(item)} variant="secundario">
-                      <PlayIcon className="h-5 w-5" /> {item.name || `Video ${index + 1}`}
+                    <Boton key={index} onClick={() => abrirVideoModal(item)} variant="secundario" className="h-auto">
+                        <div className="flex flex-col text-left">
+                            <span className="flex items-center gap-2"><PlayIcon className="h-5 w-5" /> {item.name || `Video ${index + 1}`}</span>
+                            {(item.tags && item.tags.length > 0) && <span className="text-xs opacity-75">{item.tags.join(', ')}</span>}
+                        </div>
                     </Boton>
                   ))}
                   {cap.audioItems && cap.audioItems.map((item, index) => (
-                    <Boton key={index} onClick={() => abrirAudioModal(item)} variant="secundario">
-                      <PlayCircleIcon className="h-5 w-5" /> {item.name || `Audio ${index + 1}`}
+                    <Boton key={index} onClick={() => abrirAudioModal(item)} variant="secundario" className="h-auto">
+                        <div className="flex flex-col text-left">
+                            <span className="flex items-center gap-2"><PlayCircleIcon className="h-5 w-5" /> {item.name || `Audio ${index + 1}`}</span>
+                            {(item.tags && item.tags.length > 0) && <span className="text-xs opacity-75">{item.tags.join(', ')}</span>}
+                        </div>
                     </Boton>
                   ))}
                   {cap.pdfItems && cap.pdfItems.map((item, index) => (
-                    <Boton key={index} onClick={() => abrirPdfModal(item)} variant="secundario">
-                      <DocumentTextIcon className="h-5 w-5" /> {item.name || `PDF ${index + 1}`}
+                    <Boton key={index} onClick={() => abrirPdfModal(item)} variant="secundario" className="h-auto">
+                        <div className="flex flex-col text-left">
+                            <span className="flex items-center gap-2"><DocumentTextIcon className="h-5 w-5" /> {item.name || `PDF ${index + 1}`}</span>
+                            {(item.tags && item.tags.length > 0) && <span className="text-xs opacity-75">{item.tags.join(', ')}</span>}
+                        </div>
                     </Boton>
                   ))}
                   <Boton onClick={() => handleDescargarCapituloZip(cap)} variant="secundario">
@@ -1752,6 +2018,7 @@ function App() {
         {vistaActual === 'Biblioteca' && renderVistaBiblioteca()}
         {vistaActual === 'Artesanos' && renderVistaArtesanos()}
         {vistaActual === 'Visor PDF' && renderVistaVisorPdf()}
+        {vistaActual === 'Gestión de Etiquetas' && renderVistaGestionEtiquetas()}
       </main>
     </div>
   );
