@@ -1984,6 +1984,114 @@ function App() {
   };
 
 
+  const renderVistaGestionEtiquetas = () => {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Gestión de Etiquetas</h2>
+
+        {/* Video Tags */}
+        <Card className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Etiquetas de Video</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {mediaTags.video.map((tag, index) => (
+              <span key={index} className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 flex items-center">
+                {tag}
+                <button
+                  onClick={() => handleRemoveTag('video', tag)}
+                  className="ml-1 text-blue-800 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Nueva etiqueta de video"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                  handleAddTag('video', e.target.value.trim());
+                  e.target.value = '';
+                }
+              }}
+            />
+            <Boton onClick={() => handleAddTag('video', document.querySelector('input[placeholder="Nueva etiqueta de video"]').value.trim())}>
+              Añadir
+            </Boton>
+          </div>
+        </Card>
+
+        {/* Audio Tags */}
+        <Card className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Etiquetas de Audio</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {mediaTags.audio.map((tag, index) => (
+              <span key={index} className="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300 flex items-center">
+                {tag}
+                <button
+                  onClick={() => handleRemoveTag('audio', tag)}
+                  className="ml-1 text-green-800 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Nueva etiqueta de audio"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                  handleAddTag('audio', e.target.value.trim());
+                  e.target.value = '';
+                }
+              }}
+            />
+            <Boton onClick={() => handleAddTag('audio', document.querySelector('input[placeholder="Nueva etiqueta de audio"]').value.trim())}>
+              Añadir
+            </Boton>
+          </div>
+        </Card>
+
+        {/* PDF Tags */}
+        <Card className="mb-6">
+          <h3 className="text-lg font-semibold mb-4">Etiquetas de PDF</h3>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {mediaTags.pdf.map((tag, index) => (
+              <span key={index} className="bg-red-100 text-red-800 text-sm font-medium px-2.5 py-0.5 rounded dark:bg-red-900 dark:text-red-300 flex items-center">
+                {tag}
+                <button
+                  onClick={() => handleRemoveTag('pdf', tag)}
+                  className="ml-1 text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="Nueva etiqueta de PDF"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                  handleAddTag('pdf', e.target.value.trim());
+                  e.target.value = '';
+                }
+              }}
+            />
+            <Boton onClick={() => handleAddTag('pdf', document.querySelector('input[placeholder="Nueva etiqueta de PDF"]').value.trim())}>
+              Añadir
+            </Boton>
+          </div>
+        </Card>
+      </div>
+    );
+  };
+
+
   // --- RENDERIZADO PRINCIPAL ---
   return (
     <div className="flex h-screen text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-900">
