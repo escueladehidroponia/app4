@@ -1031,7 +1031,7 @@ function App() {
   const renderModalEditarLibro = () => {
     if (!libroEditando) return null;
 
-    const TagInput = ({ tags, onTagsChange, tagType }) => {
+    const TagInput = ({ tags, onTagsChange, tagType, availableTags }) => {
         let spanClass = '';
         let buttonClass = '';
         let placeholder = 'Añadir etiqueta y presionar Enter';
@@ -1070,6 +1070,12 @@ function App() {
             }
         };
 
+        const handleSelectTag = (tag) => {
+            if (!tags.includes(tag)) {
+                onTagsChange([...tags, tag]);
+            }
+        };
+
         return (
             <div>
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -1090,7 +1096,24 @@ function App() {
                     type="text"
                     placeholder={placeholder}
                     onKeyPress={handleAdd}
+                    list={`datalist-${tagType}`}
                 />
+                <datalist id={`datalist-${tagType}`}>
+                    {(availableTags || []).map(tag => <option key={tag} value={tag} />)}
+                </datalist>
+    
+                <div className="flex flex-wrap gap-1 mt-2">
+                    {(availableTags || []).map(tag => (
+                        <button
+                            key={tag}
+                            type="button"
+                            onClick={() => handleSelectTag(tag)}
+                            className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full px-2 py-1"
+                        >
+                           + {tag}
+                        </button>
+                    ))}
+                </div>
             </div>
         );
     };
@@ -1167,6 +1190,7 @@ function App() {
                                 setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                             }}
                             tagType="video"
+                            availableTags={mediaTags.video}
                           />
                         </div>
                       </div>
@@ -1231,6 +1255,7 @@ function App() {
                                 setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                             }}
                             tagType="audio"
+                            availableTags={mediaTags.audio}
                           />
                         </div>
                       </div>
@@ -1295,6 +1320,7 @@ function App() {
                                 setLibroEditando({ ...libroEditando, capitulos: nuevosCapitulos });
                             }}
                             tagType="pdf"
+                            availableTags={mediaTags.pdf}
                           />
                         </div>
                       </div>
