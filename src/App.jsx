@@ -1569,6 +1569,7 @@ function App() {
               placeholder="Nombre del artesano (ej. Tono Formal)" 
               value={artesanoEditando ? artesanoEditando.nombre : nuevoArtesano.nombre}
               onChange={e => artesanoEditando ? setArtesanoEditando({...artesanoEditando, nombre: e.target.value}) : setNuevoArtesano({...nuevoArtesano, nombre: e.target.value})}
+              disabled={artesanoEditando?.id === 'multicultural'}
             />
             <Textarea 
               placeholder="Prompt para la IA (ej. 'Re-escribe el siguiente texto con un tono profesional y académico...')" 
@@ -1584,12 +1585,12 @@ function App() {
         </Card>
         <div className="space-y-4">
           <h3 className="text-lg font-bold mb-4">Lista de Artesanos</h3>
-          {artesanos.filter(a => a.id !== 'multicultural').map(artesano => (
+          {artesanos.map(artesano => (
             <Card key={artesano.id} className="flex justify-between items-center">
               <p className="font-medium">{artesano.nombre}</p>
               <div className="flex gap-2">
                 <Boton variant="secundario" onClick={() => setArtesanoEditando(artesano)}>Editar</Boton>
-                <Boton variant="peligro" onClick={() => handleEliminarArtesano(artesano.id)}><TrashIcon className="h-5 w-5" /></Boton>
+                <Boton variant="peligro" onClick={() => handleEliminarArtesano(artesano.id)} disabled={artesano.id === 'multicultural'}><TrashIcon className="h-5 w-5" /></Boton>
               </div>
             </Card>
           ))}
